@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "910921426775",
+    "project_id": "rakshanet--live--location",
+    "storage_bucket": "rakshanet--live--location.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:910921426775:android:726cc73754f5bcfad08012",
+        "android_client_info": {
+          "package_name": "com.venkat.sosbuttonapp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWQoc2oxpZBShVgLrL-PJkI_a6kAHQUcg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
