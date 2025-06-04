@@ -6,6 +6,7 @@ import ThemeToggle from "@/components/ThemeToggle"
 import { useAuth } from "@/context/auth-context"
 import { Ionicons } from "@expo/vector-icons"
 import { useState } from "react"
+import NearbyStation from "@/components/NearbyStation"
 
 export default function DashboardScreen() {
   const { user } = useAuth()
