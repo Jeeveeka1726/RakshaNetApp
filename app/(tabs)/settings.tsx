@@ -1,14 +1,14 @@
 "use client"
 
-import React from "react"
-import { StyleSheet, SafeAreaView, Switch, TouchableOpacity } from "react-native"
-import { View, Text, Card, ScrollView } from "@/components/themed"
-import { useAuth } from "@/context/auth-context"
-import { router } from "expo-router"
-import { Ionicons } from "@expo/vector-icons"
+import { Card, ScrollView, Text, View } from "@/components/themed"
 import ThemeToggle from "@/components/ThemeToggle"
-import { useThemeColor } from "@/hooks/useThemeColor"
+import { useAuth } from "@/context/auth-context"
 import { useTheme } from "@/context/theme-context"
+import { useThemeColor } from "@/hooks/useThemeColor"
+import { Ionicons } from "@expo/vector-icons"
+import { router } from "expo-router"
+import React from "react"
+import { SafeAreaView, StyleSheet, Switch, TouchableOpacity } from "react-native"
 
 export default function SettingsScreen() {
   const { logout, user } = useAuth()
@@ -42,9 +42,6 @@ export default function SettingsScreen() {
               <Text style={styles.profileEmail}>{user?.email || "user@example.com"}</Text>
             </View>
           </View>
-          <TouchableOpacity style={styles.editProfileButton}>
-            <Text style={styles.editProfileText}>Edit Profile</Text>
-          </TouchableOpacity>
         </Card>
 
         <Text style={styles.sectionTitle}>Appearance</Text>
@@ -71,7 +68,7 @@ export default function SettingsScreen() {
             <Switch
               value={shakeDetection}
               onValueChange={setShakeDetection}
-              trackColor={{ false: "#767577", true: "#0a7ea4" }}
+              trackColor={{ false: "#767577", true: "#DC2626" }}
               thumbColor="#f4f3f4"
             />
           </View>
@@ -86,7 +83,7 @@ export default function SettingsScreen() {
             <Switch
               value={voiceActivation}
               onValueChange={setVoiceActivation}
-              trackColor={{ false: "#767577", true: "#0a7ea4" }}
+              trackColor={{ false: "#767577", true: "#DC2626" }}
               thumbColor="#f4f3f4"
             />
           </View>
@@ -101,7 +98,7 @@ export default function SettingsScreen() {
             <Switch
               value={autoLocation}
               onValueChange={setAutoLocation}
-              trackColor={{ false: "#767577", true: "#0a7ea4" }}
+              trackColor={{ false: "#767577", true: "#DC2626" }}
               thumbColor="#f4f3f4"
             />
           </View>
@@ -110,9 +107,19 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Account</Text>
 
         <Card style={styles.settingsCard}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/edit-profile")}>
+            <View style={styles.menuItemContent}>
+              <Ionicons name="person" size={24} color="#DC2626" />
+              <Text style={styles.menuItemText}>Edit Profile</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={textColor} />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
           <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/(tabs)/contacts")}>
             <View style={styles.menuItemContent}>
-              <Ionicons name="people" size={24} color="#0a7ea4" />
+              <Ionicons name="people" size={24} color="#DC2626" />
               <Text style={styles.menuItemText}>Emergency Contacts</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={textColor} />
@@ -120,9 +127,9 @@ export default function SettingsScreen() {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/notifications")}>
             <View style={styles.menuItemContent}>
-              <Ionicons name="notifications" size={24} color="#0a7ea4" />
+              <Ionicons name="notifications" size={24} color="#DC2626" />
               <Text style={styles.menuItemText}>Notifications</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={textColor} />
@@ -130,9 +137,9 @@ export default function SettingsScreen() {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/privacy-security")}>
             <View style={styles.menuItemContent}>
-              <Ionicons name="shield" size={24} color="#0a7ea4" />
+              <Ionicons name="shield" size={24} color="#DC2626" />
               <Text style={styles.menuItemText}>Privacy & Security</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={textColor} />
@@ -140,10 +147,32 @@ export default function SettingsScreen() {
 
           <View style={styles.divider} />
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/help-support")}>
             <View style={styles.menuItemContent}>
-              <Ionicons name="help-circle" size={24} color="#0a7ea4" />
+              <Ionicons name="help-circle" size={24} color="#DC2626" />
               <Text style={styles.menuItemText}>Help & Support</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={textColor} />
+          </TouchableOpacity>
+        </Card>
+
+        <Text style={styles.sectionTitle}>Legal</Text>
+
+        <Card style={styles.settingsCard}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/terms-conditions")}>
+            <View style={styles.menuItemContent}>
+              <Ionicons name="document-text" size={24} color="#DC2626" />
+              <Text style={styles.menuItemText}>Terms & Conditions</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={textColor} />
+          </TouchableOpacity>
+
+          <View style={styles.divider} />
+
+          <TouchableOpacity style={styles.menuItem} onPress={() => router.push("/privacy-policy")}>
+            <View style={styles.menuItemContent}>
+              <Ionicons name="shield-checkmark" size={24} color="#DC2626" />
+              <Text style={styles.menuItemText}>Privacy Policy</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color={textColor} />
           </TouchableOpacity>
@@ -201,13 +230,13 @@ const styles = StyleSheet.create({
     opacity: 0.7,
   },
   editProfileButton: {
-    backgroundColor: "rgba(10, 126, 164, 0.1)",
+    backgroundColor: "rgba(220, 38, 38, 0.1)",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
   },
   editProfileText: {
-    color: "#0a7ea4",
+    color: "#DC2626",
     fontWeight: "600",
   },
   sectionTitle: {

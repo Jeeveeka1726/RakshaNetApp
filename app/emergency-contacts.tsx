@@ -1,9 +1,18 @@
 "use client"
 
-import { useState } from "react"
-import { StyleSheet, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard, Alert } from "react-native"
+import { useState, useRef } from "react"
+import {
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Alert,
+  TextInput,
+  TouchableOpacity,
+} from "react-native"
 import { router } from "expo-router"
-import { View, Text, TextInput, Button, ScrollView, Card } from "@/components/themed"
+import { View, Text, Button, ScrollView, Card } from "@/components/themed"
 import { Ionicons } from "@expo/vector-icons"
 
 type Contact = {
@@ -20,6 +29,29 @@ export default function EmergencyContactsScreen() {
   const [otp, setOtp] = useState("")
   const [contacts, setContacts] = useState<Contact[]>([])
   const [isLoading, setIsLoading] = useState(false)
+
+  const [focusedIndex, setFocusedIndex] = useState(-1)
+  const otpRefs = useRef<(TextInput | null)[]>([])
+
+  const handleOtpChange = (text: string, index: number) => {
+    if (text.length <= 1) {
+      const newOtp = otp.split("")
+      newOtp[index] = text
+      setOtp(newOtp.join(""))
+
+      // Auto-focus next input when entering a digit
+      if (text && index < 3) {
+        otpRefs.current[index + 1]?.focus()
+      }
+    }
+  }
+
+  const handleKeyPress = (e: any, index: number) => {
+    // Handle backspace to move to previous input
+    if (e.nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus()
+    }
+  }
 
   const handleVerify = () => {
     if (!name.trim()) {
@@ -143,23 +175,53 @@ export default function EmergencyContactsScreen() {
 
             {isVerifying && (
               <View style={styles.otpContainer}>
-                <Text style={styles.label}>Enter OTP sent to {phoneNumber}</Text>
-                <View style={styles.otpInputRow}>
-                  <TextInput
-                    style={styles.otpInput}
-                    placeholder="Enter OTP"
-                    value={otp}
-                    onChangeText={setOtp}
-                    keyboardType="number-pad"
-                    maxLength={6}
-                  />
-                  <Button style={styles.confirmButton} onPress={handleConfirmOtp}>
-                    Confirm
-                  </Button>
+                <Text style={styles.otpLabel}>Enter verification code</Text>
+                <Text style={styles.otpSubLabel}>We sent a 4-digit code to {phoneNumber}</Text>
+
+                <View style={styles.otpBoxContainer}>
+                  {[0, 1, 2, 3].map((index) => (
+                    <View key={index} style={styles.otpBoxWrapper}>
+                      <TextInput
+                        ref={(ref) => {
+                          if (ref) otpRefs.current[index] = ref
+                        }}
+                        style={[
+                          styles.otpBox,
+                          otp[index] && styles.otpBoxFilled,
+                          focusedIndex === index && styles.otpBoxFocused,
+                        ]}
+                        value={otp[index] || ""}
+                        onChangeText={(text) => handleOtpChange(text, index)}
+                        onKeyPress={(e) => handleKeyPress(e, index)}
+                        onFocus={() => setFocusedIndex(index)}
+                        onBlur={() => setFocusedIndex(-1)}
+                        keyboardType="number-pad"
+                        maxLength={1}
+                        textAlign="center"
+                        selectTextOnFocus
+                        autoFocus={index === 0}
+                      />
+                    </View>
+                  ))}
                 </View>
-                <Button style={styles.cancelVerifyButton} onPress={resetForm}>
-                  Cancel
-                </Button>
+
+                <TouchableOpacity style={styles.resendContainer} onPress={() => {}}>
+                  <Text style={styles.resendText}>Didn't receive code? </Text>
+                  <Text style={styles.resendLink}>Resend</Text>
+                </TouchableOpacity>
+
+                <View style={styles.otpButtonContainer}>
+                  <TouchableOpacity style={styles.cancelOtpButton} onPress={resetForm}>
+                    <Text style={styles.cancelOtpText}>Cancel</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.verifyOtpButton, otp.length === 4 && styles.verifyOtpButtonActive]}
+                    onPress={handleConfirmOtp}
+                    disabled={otp.length !== 4}
+                  >
+                    <Text style={styles.verifyOtpText}>Verify</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             )}
           </Card>
@@ -253,25 +315,119 @@ const styles = StyleSheet.create({
     width: 100,
   },
   otpContainer: {
-    marginTop: 16,
-    paddingTop: 16,
+    marginTop: 24,
+    paddingTop: 24,
     borderTopWidth: 1,
-    borderTopColor: "rgba(0, 0, 0, 0.1)",
+    borderTopColor: "rgba(220, 38, 38, 0.2)",
+    alignItems: "center",
   },
-  otpInputRow: {
+  otpLabel: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#DC2626",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  otpSubLabel: {
+    fontSize: 14,
+    color: "#666",
+    marginBottom: 32,
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  otpBoxContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 24,
+    gap: 16,
+  },
+  otpBoxWrapper: {
+    position: "relative",
+  },
+  otpBox: {
+    width: 56,
+    height: 56,
+    borderWidth: 2,
+    borderColor: "#E5E7EB",
+    borderRadius: 12,
+    fontSize: 24,
+    fontWeight: "bold",
+    backgroundColor: "#F9FAFB",
+    color: "#1F2937",
+    textAlign: "center",
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  otpBoxFocused: {
+    borderColor: "#DC2626",
+    backgroundColor: "#FEF2F2",
+    borderWidth: 2,
+    elevation: 4,
+    shadowOpacity: 0.2,
+  },
+  otpBoxFilled: {
+    borderColor: "#DC2626",
+    backgroundColor: "#FEF2F2",
+    color: "#DC2626",
+  },
+  resendContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 12,
+    marginBottom: 32,
   },
-  otpInput: {
+  resendText: {
+    fontSize: 14,
+    color: "#6B7280",
+  },
+  resendLink: {
+    fontSize: 14,
+    color: "#DC2626",
+    fontWeight: "600",
+  },
+  otpButtonContainer: {
+    flexDirection: "row",
+    gap: 12,
+    width: "100%",
+  },
+  cancelOtpButton: {
     flex: 1,
-    marginRight: 12,
+    backgroundColor: "#F3F4F6",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
   },
-  confirmButton: {
-    width: 100,
+  cancelOtpText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#6B7280",
   },
-  cancelVerifyButton: {
-    backgroundColor: "#888888",
+  verifyOtpButton: {
+    flex: 1,
+    backgroundColor: "#D1D5DB",
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  verifyOtpButtonActive: {
+    backgroundColor: "#DC2626",
+    elevation: 2,
+    shadowColor: "#DC2626",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  verifyOtpText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   contactsContainer: {
     marginBottom: 24,
