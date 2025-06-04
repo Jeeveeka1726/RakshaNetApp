@@ -1,21 +1,21 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
-import {
-  View,
-  StyleSheet,
-  Alert,
-  ActivityIndicator,
-  TouchableOpacity,
-  Text,
-  Modal,
-  TouchableWithoutFeedback,
-} from "react-native"
 import * as Location from "expo-location"
+import { useEffect, useRef, useState } from "react"
+import {
+  ActivityIndicator,
+  Alert,
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
+} from "react-native"
 
 // Firebase imports
 import { initializeApp } from "firebase/app"
-import { getFirestore, collection, addDoc } from "firebase/firestore"
+import { addDoc, collection, getFirestore } from "firebase/firestore"
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -44,7 +44,7 @@ export default function SOSButton() {
   const contacts = ["+918925205027"]
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== "granted") {
         Alert.alert("Permission denied", "Location access is required for SOS.")
@@ -246,7 +246,7 @@ export default function SOSButton() {
       <Modal visible={modalVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={cancelSOS}>
           <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={() => {}}>
+            <TouchableWithoutFeedback onPress={() => { }}>
               <View style={styles.modalContent}>
                 <Text style={styles.countdownText}>Choose SOS method ({countdown}s remaining)</Text>
                 <Text style={styles.subText}>
@@ -281,10 +281,10 @@ export default function SOSButton() {
 const styles = StyleSheet.create({
   container: { alignItems: "center", justifyContent: "center", flex: 1 },
   sosButton: {
-    width: 180, // Increased from 150
-    height: 180, // Increased from 150
-    backgroundColor: "crimson",
-    borderRadius: 90, // Half of width/height
+    width: 180,
+    height: 180,
+    backgroundColor: "#DC2626", // Changed from "crimson" to match theme
+    borderRadius: 90,
     justifyContent: "center",
     alignItems: "center",
     elevation: 10,
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
   sosText: {
     color: "white",
     fontWeight: "bold",
-    fontSize: 40, // Increased from 32
+    fontSize: 40,
     textAlign: "center",
   },
   // Keep all other styles unchanged
@@ -357,5 +357,17 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     fontSize: 16,
+  },
+  addButton: {
+    padding: 8,
+  },
+  contactAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(220, 38, 38, 0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
   },
 })

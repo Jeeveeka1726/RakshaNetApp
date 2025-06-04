@@ -1,11 +1,11 @@
+import { useThemeColor } from "@/hooks/useThemeColor"
 import {
+  ScrollView as DefaultScrollView,
   Text as DefaultText,
-  View as DefaultView,
   TextInput as DefaultTextInput,
   TouchableOpacity as DefaultTouchableOpacity,
-  ScrollView as DefaultScrollView,
+  View as DefaultView,
 } from "react-native"
-import { useThemeColor } from "@/hooks/useThemeColor"
 
 type ThemeProps = {
   lightColor?: string
@@ -64,7 +64,7 @@ export function Button({
   children,
   ...otherProps
 }: TouchableOpacityProps & { textStyle?: TextProps["style"] }) {
-  const backgroundColor = useThemeColor({ light: lightColor || "#0a7ea4", dark: darkColor || "#0a7ea4" }, "tint")
+  const backgroundColor = useThemeColor({ light: lightColor || "#DC2626", dark: darkColor || "#EF4444" }, "tint")
 
   return (
     <DefaultTouchableOpacity
