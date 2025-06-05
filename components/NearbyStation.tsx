@@ -61,6 +61,18 @@ export default function NearbyStationsWithModal() {
     Linking.openURL(url);
   };
 
+  const calculateDistance = (lat1, lng1, lat2, lng2) => {
+    const R = 6371; // Earth's radius in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    return distance.toFixed(1);
+  };
+
   useEffect(() => {
     getLocationAndStations();
   }, []);
@@ -68,13 +80,15 @@ export default function NearbyStationsWithModal() {
   return (
     <View style={styles.container}>
       <TouchableOpacity
-        style={styles.shieldButton}
+        style={styles.policeStationButton}
         onPress={() => {
           setModalVisible(true);
           getLocationAndStations(); // refresh on open
         }}
       >
-        <Ionicons name="shield-checkmark" size={30} color="white" />
+        <Ionicons name="shield-checkmark" size={24} color="#DC2626" />
+        <Text style={styles.policeStationText}>Find Nearby Police Stations</Text>
+        <Ionicons name="chevron-forward" size={20} color="#DC2626" />
       </TouchableOpacity>
 
       <Modal
@@ -84,39 +98,57 @@ export default function NearbyStationsWithModal() {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Nearby Police Stations</Text>
+          <View style={styles.bottomSheet}>
+            <View style={styles.bottomSheetHeader}>
+              <Text style={styles.bottomSheetTitle}>Nearby Police Stations</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Ionicons name="close" size={24} color="#DC2626" />
+              </TouchableOpacity>
+            </View>
 
             {loading ? (
-              <ActivityIndicator size="large" />
+              <View style={styles.policeStationsList}>
+                <ActivityIndicator size="large" color="#DC2626" />
+              </View>
             ) : errorMsg ? (
-              <Text style={styles.error}>{errorMsg}</Text>
+              <View style={styles.policeStationsList}>
+                <Text style={styles.error}>{errorMsg}</Text>
+              </View>
             ) : (
               <FlatList
+                style={styles.policeStationsList}
                 data={stations}
                 keyExtractor={(item) => item.place_id}
+                showsVerticalScrollIndicator={false}
                 renderItem={({ item }) => (
-                  <View style={styles.stationItem}>
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.name}>{item.name}</Text>
-                      <Text style={styles.address}>{item.vicinity}</Text>
+                  <View style={styles.policeStationItem}>
+                    <View style={styles.stationInfo}>
+                      <Text style={styles.stationName}>{item.name}</Text>
+                      {location && (
+                        <Text style={styles.stationDistance}>
+                          {calculateDistance(
+                            location.latitude,
+                            location.longitude,
+                            item.geometry.location.lat,
+                            item.geometry.location.lng
+                          )} km away
+                        </Text>
+                      )}
+                      <Text style={styles.stationAddress}>{item.vicinity}</Text>
                     </View>
                     <TouchableOpacity
-                      style={styles.dirButton}
+                      style={styles.directionButton}
                       onPress={() =>
                         openInMaps(item.geometry.location.lat, item.geometry.location.lng)
                       }
                     >
-                      <Text style={styles.dirText}>Directions</Text>
+                      <Ionicons name="navigate" size={16} color="#fff" />
+                      <Text style={styles.directionButtonText}>Directions</Text>
                     </TouchableOpacity>
                   </View>
                 )}
               />
             )}
-
-            <TouchableOpacity style={styles.closeBtn} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeText}>Close</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -127,81 +159,96 @@ export default function NearbyStationsWithModal() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'flex-end',
-    alignItems: 'flex-end',
-    padding: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#f2f4f8',
   },
-  shieldButton: {
-    backgroundColor: '#007bff',
-    padding: 18,
-    borderRadius: 50,
-    elevation: 6,
-    position: 'absolute',
-    bottom: 30,
-    right: 30,
+  policeStationButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: "#DC2626",
+  },
+  policeStationText: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#DC2626",
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
-  modalCard: {
-    width: '90%',
-    maxHeight: '80%',
-    backgroundColor: 'white',
-    borderRadius: 16,
+  bottomSheet: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: "70%",
+    paddingTop: 20,
+  },
+  bottomSheetHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E0E0E0",
+  },
+  bottomSheetTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#DC2626",
+  },
+  policeStationsList: {
     padding: 20,
-    elevation: 10,
   },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    textAlign: 'center',
-    color: '#222',
-  },
-  stationItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  policeStationItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    backgroundColor: "#F9F9F9",
+    borderRadius: 12,
     marginBottom: 12,
-    paddingBottom: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#ccc',
   },
-  name: {
+  stationInfo: {
+    flex: 1,
+  },
+  stationName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
+    fontWeight: "bold",
+    marginBottom: 4,
   },
-  address: {
+  stationDistance: {
     fontSize: 14,
-    color: '#666',
+    color: "#DC2626",
+    fontWeight: "600",
+    marginBottom: 2,
   },
-  dirButton: {
-    backgroundColor: '#28a745',
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignSelf: 'center',
+  stationAddress: {
+    fontSize: 12,
+    color: "#666",
   },
-  dirText: {
-    color: 'white',
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  closeBtn: {
-    backgroundColor: '#dc3545',
-    padding: 10,
+  directionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#DC2626",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 8,
-    marginTop: 15,
-    alignItems: 'center',
   },
-  closeText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 15,
+  directionButtonText: {
+    color: "#fff",
+    marginLeft: 4,
+    fontSize: 12,
+    fontWeight: "600",
   },
   error: {
     color: 'red',
