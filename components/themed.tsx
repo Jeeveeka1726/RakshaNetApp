@@ -15,7 +15,7 @@ type ThemeProps = {
 export type TextProps = ThemeProps & DefaultText["props"]
 export type ViewProps = ThemeProps & DefaultView["props"]
 export type TextInputProps = ThemeProps & DefaultTextInput["props"]
-export type TouchableOpacityProps = ThemeProps & DefaultTouchableOpacity["props"]
+export type TouchableOpacityProps = ThemeProps & React.ComponentProps<typeof DefaultTouchableOpacity>
 export type ScrollViewProps = ThemeProps & DefaultScrollView["props"]
 
 export function Text(props: TextProps) {
