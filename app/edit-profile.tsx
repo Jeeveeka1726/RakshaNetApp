@@ -1,33 +1,56 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { StyleSheet, SafeAreaView, TouchableOpacity, Alert } from "react-native"
-import { router } from "expo-router"
-import { View, Text, TextInput, Button, ScrollView, Card } from "@/components/themed"
-import { useAuth } from "@/context/auth-context"
-import { Ionicons } from "@expo/vector-icons"
+import { useState } from "react";
+import {
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import { router } from "expo-router";
+import {
+  View,
+  Text,
+  TextInput,
+  Button,
+  ScrollView,
+  Card,
+} from "@/components/themed";
+import { useAuth } from "@/context/auth-context";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function EditProfileScreen() {
-  const { user } = useAuth()
-  const [name, setName] = useState(user?.name || "")
-  const [email, setEmail] = useState(user?.email || "")
-  const [age, setAge] = useState(user?.age?.toString() || "")
-  const [phone, setPhone] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const { user, updateProfile } = useAuth();
+  const [name, setName] = useState(user?.name || "");
+  const [age, setAge] = useState(user?.age?.toString() || "");
+  const [phone, setPhone] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSave = async () => {
-    if (!name.trim() || !email.trim()) {
-      Alert.alert("Error", "Name and email are required")
-      return
+    if (!name.trim()) {
+      Alert.alert("Error", "Name is required");
+      return;
     }
 
-    setIsLoading(true)
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false)
-      Alert.alert("Success", "Profile updated successfully", [{ text: "OK", onPress: () => router.back() }])
-    }, 1000)
-  }
+    setIsLoading(true);
+    try {
+      const success = await updateProfile(
+        name.trim(),
+        age ? Number.parseInt(age) : undefined
+      );
+      if (success) {
+        Alert.alert("Success", "Profile updated successfully", [
+          { text: "OK", onPress: () => router.back() },
+        ]);
+      } else {
+        Alert.alert("Error", "Failed to update profile");
+      }
+    } catch (error) {
+      Alert.alert("Error", "An error occurred while updating profile");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -52,19 +75,23 @@ export default function EditProfileScreen() {
         <Card style={styles.formCard}>
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Full Name</Text>
-            <TextInput style={styles.input} placeholder="Enter your full name" value={name} onChangeText={setName} />
+            <TextInput
+              style={styles.input}
+              placeholder="Enter your full name"
+              value={name}
+              onChangeText={setName}
+            />
           </View>
 
           <View style={styles.inputContainer}>
             <Text style={styles.label}>Email</Text>
             <TextInput
-              style={styles.input}
+              style={[styles.input, styles.disabledInput]}
               placeholder="Enter your email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
+              value={user?.email || ""}
+              editable={false}
             />
+            <Text style={styles.helperText}>Email cannot be changed</Text>
           </View>
 
           <View style={styles.inputContainer}>
@@ -78,24 +105,17 @@ export default function EditProfileScreen() {
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your phone number"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <Button style={styles.saveButton} onPress={handleSave} disabled={isLoading}>
+          <Button
+            style={styles.saveButton}
+            onPress={handleSave}
+            disabled={isLoading}
+          >
             {isLoading ? "Saving..." : "Save Changes"}
           </Button>
         </Card>
       </ScrollView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -147,8 +167,18 @@ const styles = StyleSheet.create({
   input: {
     width: "100%",
   },
+  disabledInput: {
+    opacity: 0.6,
+    backgroundColor: "#F5F5F5",
+  },
+  helperText: {
+    fontSize: 12,
+    color: "#666",
+    marginTop: 4,
+    fontStyle: "italic",
+  },
   saveButton: {
     marginTop: 16,
     backgroundColor: "#DC2626",
   },
-})
+});

@@ -14,6 +14,8 @@ import {
 } from "react-native"
 
 // Firebase imports
+import { useAuth } from "@/context/auth-context"
+import { contactService, type Contact } from "@/services/contactService"
 import { initializeApp } from "firebase/app"
 import { addDoc, collection, getFirestore } from "firebase/firestore"
 
@@ -33,18 +35,38 @@ const app = initializeApp(firebaseConfig)
 const db = getFirestore(app)
 
 export default function SOSButton() {
+  const { accessToken } = useAuth()
   const [locationLink, setLocationLink] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [modalVisible, setModalVisible] = useState(false)
   const [countdown, setCountdown] = useState(10)
   const [selectedMethod, setSelectedMethod] = useState<"SMS" | "Call" | null>(null)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+  const [contacts, setContacts] = useState<string[]>([])
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const watcherRef = useRef<Location.LocationSubscription | null>(null)
 
-  const contacts = ["+918925205027"]
+  useEffect(() => {
+    loadEmergencyContacts()
+  }, [accessToken])
+
+  const loadEmergencyContacts = async () => {
+    if (!accessToken) return
+
+    try {
+      const response = await contactService.getContacts(accessToken)
+      if (response.success) {
+        const phoneNumbers = response.data.contacts.map((contact: Contact) => contact.phone)
+        setContacts(phoneNumbers)
+      }
+    } catch (error) {
+      console.error("Error loading emergency contacts:", error)
+      // Fallback to default contact
+      setContacts(["+918925205027"])
+    }
+  }
 
   useEffect(() => {
-    ; (async () => {
+    ;(async () => {
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== "granted") {
         Alert.alert("Permission denied", "Location access is required for SOS.")
@@ -116,6 +138,11 @@ export default function SOSButton() {
       return
     }
 
+    if (contacts.length === 0) {
+      Alert.alert("No emergency contacts found. Please add contacts first.")
+      return
+    }
+
     setLoading(true)
     const message = `🚨 SOS! I need help!\n📍Live Location: ${locationLink}`
     const match = locationLink.match(/q=([-\d.]+),([-\d.]+)/)
@@ -124,9 +151,12 @@ export default function SOSButton() {
 
     try {
       for (const to of contacts) {
-        const response = await fetch("http://192.168.29.207:3000/send-sms", {
+        const response = await fetch("http://localhost:5500/send-sms", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify({ to, message }),
         })
 
@@ -154,6 +184,11 @@ export default function SOSButton() {
       return
     }
 
+    if (contacts.length === 0) {
+      Alert.alert("No emergency contacts found. Please add contacts first.")
+      return
+    }
+
     setLoading(true)
     const match = locationLink.match(/q=([-\d.]+),([-\d.]+)/)
     const lat = match ? Number.parseFloat(match[1]) : null
@@ -165,11 +200,14 @@ export default function SOSButton() {
     }
 
     try {
-      const response = await fetch("http://192.168.29.207:3000/make-call", {
+      const response = await fetch("http://localhost:5500/make-call", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
         body: JSON.stringify({
-          to: contacts[0],
+          to: contacts[0], // Call the first contact
           message: `🚨 SOS! I need help!\n📍Location: ${humanAddress}`,
         }),
       })
@@ -215,6 +253,11 @@ export default function SOSButton() {
   }
 
   const handleSOSPress = () => {
+    if (contacts.length === 0) {
+      Alert.alert("No Emergency Contacts", "Please add emergency contacts before using SOS.", [{ text: "OK" }])
+      return
+    }
+
     setCountdown(10)
     setSelectedMethod(null)
     setModalVisible(true)
@@ -246,11 +289,14 @@ export default function SOSButton() {
       <Modal visible={modalVisible} transparent animationType="fade">
         <TouchableWithoutFeedback onPress={cancelSOS}>
           <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={() => { }}>
+            <TouchableWithoutFeedback onPress={() => {}}>
               <View style={styles.modalContent}>
                 <Text style={styles.countdownText}>Choose SOS method ({countdown}s remaining)</Text>
                 <Text style={styles.subText}>
                   {selectedMethod ? `${selectedMethod} selected` : "SMS will be sent if no selection"}
+                </Text>
+                <Text style={styles.contactsText}>
+                  Will notify {contacts.length} emergency contact{contacts.length !== 1 ? "s" : ""}
                 </Text>
 
                 <View style={styles.methodButtons}>
@@ -283,7 +329,7 @@ const styles = StyleSheet.create({
   sosButton: {
     width: 180,
     height: 180,
-    backgroundColor: "#DC2626", // Changed from "crimson" to match theme
+    backgroundColor: "#DC2626",
     borderRadius: 90,
     justifyContent: "center",
     alignItems: "center",
@@ -299,7 +345,6 @@ const styles = StyleSheet.create({
     fontSize: 40,
     textAlign: "center",
   },
-  // Keep all other styles unchanged
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0,0,0,0.55)",
@@ -322,8 +367,15 @@ const styles = StyleSheet.create({
   subText: {
     fontSize: 14,
     color: "gray",
+    marginBottom: 8,
+    textAlign: "center",
+  },
+  contactsText: {
+    fontSize: 12,
+    color: "#DC2626",
     marginBottom: 20,
     textAlign: "center",
+    fontWeight: "600",
   },
   methodButtons: {
     width: "100%",
@@ -357,17 +409,5 @@ const styles = StyleSheet.create({
     color: "white",
     fontWeight: "600",
     fontSize: 16,
-  },
-  addButton: {
-    padding: 8,
-  },
-  contactAvatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "rgba(220, 38, 38, 0.1)",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
   },
 })

@@ -1,18 +1,36 @@
-import { AuthProvider } from "@/context/auth-context"
-import { ThemeProvider } from "@/context/theme-context"
-import { useColorScheme } from "@/hooks/useColorScheme"
-import { DarkTheme, DefaultTheme, ThemeProvider as NavigationThemeProvider } from "@react-navigation/native"
-import { useFonts } from "expo-font"
-import { Stack } from "expo-router"
-import { StatusBar } from "expo-status-bar"
-import { Text, View } from "react-native"
-import "react-native-reanimated"
+"use client";
+
+import { AuthProvider, useAuth } from "@/context/auth-context";
+import { ThemeProvider } from "@/context/theme-context";
+import { useColorScheme } from "@/hooks/useColorScheme";
+import {
+  DarkTheme,
+  DefaultTheme,
+  ThemeProvider as NavigationThemeProvider,
+} from "@react-navigation/native";
+import { useFonts } from "expo-font";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import { Text, View, ActivityIndicator } from "react-native";
+import "react-native-reanimated";
 
 function RootLayoutContent() {
-  const colorScheme = useColorScheme()
+  const colorScheme = useColorScheme();
+  const { loading } = useAuth();
+
+  if (loading) {
+    return (
+      <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#DC2626" />
+        <Text style={{ marginTop: 16, fontSize: 16 }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return (
-    <NavigationThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+    <NavigationThemeProvider
+      value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+    >
       <Stack
         screenOptions={{
           headerShown: false,
@@ -33,21 +51,22 @@ function RootLayoutContent() {
       </Stack>
       <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
     </NavigationThemeProvider>
-  )
+  );
 }
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
-  })
+  });
 
   // Show a loading screen until fonts are loaded
   if (!loaded) {
     return (
       <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
-        <Text>Loading...</Text>
+        <ActivityIndicator size="large" color="#DC2626" />
+        <Text style={{ marginTop: 16 }}>Loading...</Text>
       </View>
-    )
+    );
   }
 
   return (
@@ -56,5 +75,5 @@ export default function RootLayout() {
         <RootLayoutContent />
       </AuthProvider>
     </ThemeProvider>
-  )
+  );
 }

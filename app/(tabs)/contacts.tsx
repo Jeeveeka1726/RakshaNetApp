@@ -1,78 +1,247 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { StyleSheet, SafeAreaView, TouchableOpacity, Alert } from "react-native"
-import { View, Text, Card, ScrollView, TextInput, Button } from "@/components/themed"
-import { Ionicons } from "@expo/vector-icons"
-import { useThemeColor } from "@/hooks/useThemeColor"
-
-// Mock data for emergency contacts
-const initialContacts = [
-  { id: "1", name: "John Doe", phone: "+918925205027", relationship: "Family" },
-  { id: "2", name: "Jane Smith", phone: "+919876543210", relationship: "Friend" },
-]
+import { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  SafeAreaView,
+  TouchableOpacity,
+  Alert,
+} from "react-native";
+import {
+  View,
+  Text,
+  Card,
+  ScrollView,
+  TextInput,
+  Button,
+} from "@/components/themed";
+import { Ionicons } from "@expo/vector-icons";
+import { useThemeColor } from "@/hooks/useThemeColor";
+import { useAuth } from "@/context/auth-context";
+import { contactService, type Contact } from "@/services/contactService";
 
 export default function ContactsScreen() {
-  const [contacts, setContacts] = useState(initialContacts)
-  const [isAdding, setIsAdding] = useState(false)
-  const [isEditing, setIsEditing] = useState<string | null>(null)
-  const [newContact, setNewContact] = useState({ name: "", phone: "", relationship: "" })
+  const { accessToken } = useAuth();
+  const [contacts, setContacts] = useState<Contact[]>([]);
+  const [isAdding, setIsAdding] = useState(false);
+  const [isEditing, setIsEditing] = useState<string | null>(null);
+  const [newContact, setNewContact] = useState({
+    name: "",
+    phone: "",
+    relationship: "",
+  });
+  const [otp, setOtp] = useState("");
+  const [isOtpSent, setIsOtpSent] = useState(false);
+  const [isOtpVerified, setIsOtpVerified] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const textColor = useThemeColor({}, "text")
-  const borderColor = useThemeColor({ light: "#E0E0E0", dark: "#333333" }, "icon")
+  const textColor = useThemeColor({}, "text");
+  const borderColor = useThemeColor(
+    { light: "#E0E0E0", dark: "#333333" },
+    "icon"
+  );
 
-  const handleAddContact = () => {
-    if (!newContact.name || !newContact.phone) {
-      Alert.alert("Error", "Name and phone number are required")
-      return
+  useEffect(() => {
+    loadContacts();
+  }, []);
+
+  const loadContacts = async () => {
+    if (!accessToken) return;
+
+    try {
+      const response = await contactService.getContacts(accessToken);
+      if (response.success) {
+        setContacts(response.data.contacts);
+      }
+    } catch (error) {
+      console.error("Error loading contacts:", error);
+    }
+  };
+
+  const handleSendOTP = async () => {
+    if (!newContact.phone) {
+      Alert.alert("Error", "Please enter a phone number");
+      return;
     }
 
-    setContacts([...contacts, { id: Date.now().toString(), ...newContact }])
-    setNewContact({ name: "", phone: "", relationship: "" })
-    setIsAdding(false)
-  }
-
-  const handleUpdateContact = () => {
-    if (!isEditing) return
-
-    if (!newContact.name || !newContact.phone) {
-      Alert.alert("Error", "Name and phone number are required")
-      return
+    if (!accessToken) {
+      Alert.alert("Error", "Authentication required");
+      return;
     }
 
-    setContacts(contacts.map((contact) => (contact.id === isEditing ? { ...contact, ...newContact } : contact)))
-    setNewContact({ name: "", phone: "", relationship: "" })
-    setIsEditing(null)
-  }
-
-  const handleEditContact = (id: string) => {
-    const contactToEdit = contacts.find((contact) => contact.id === id)
-    if (contactToEdit) {
-      setNewContact({
-        name: contactToEdit.name,
-        phone: contactToEdit.phone,
-        relationship: contactToEdit.relationship || "",
-      })
-      setIsEditing(id)
+    setIsLoading(true);
+    try {
+      const response = await contactService.sendOTP(
+        newContact.phone,
+        accessToken
+      );
+      if (response.success) {
+        setIsOtpSent(true);
+        Alert.alert("Success", "OTP sent successfully");
+      } else {
+        Alert.alert("Error", response.error || "Failed to send OTP");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to send OTP");
+    } finally {
+      setIsLoading(false);
     }
-  }
+  };
+
+  const handleVerifyOTP = async () => {
+    if (!otp) {
+      Alert.alert("Error", "Please enter the OTP");
+      return;
+    }
+
+    if (!accessToken) {
+      Alert.alert("Error", "Authentication required");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await contactService.verifyOTP(
+        newContact.phone,
+        otp,
+        accessToken
+      );
+      if (response.success) {
+        setIsOtpVerified(true);
+        Alert.alert("Success", "Phone number verified successfully");
+      } else {
+        Alert.alert("Error", response.error || "Invalid OTP");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to verify OTP");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleAddContact = async () => {
+    if (!newContact.name || !newContact.phone || !newContact.relationship) {
+      Alert.alert("Error", "All fields are required");
+      return;
+    }
+
+    if (!isOtpVerified) {
+      Alert.alert("Error", "Please verify the phone number first");
+      return;
+    }
+
+    if (!accessToken) {
+      Alert.alert("Error", "Authentication required");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await contactService.addContact(
+        newContact.name,
+        newContact.phone,
+        newContact.relationship,
+        accessToken
+      );
+
+      if (response.success) {
+        await loadContacts();
+        resetForm();
+        Alert.alert("Success", "Emergency contact added successfully");
+      } else {
+        Alert.alert("Error", response.error || "Failed to add contact");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to add contact");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleUpdateContact = async () => {
+    if (!isEditing || !accessToken) return;
+
+    if (!newContact.name || !newContact.relationship) {
+      Alert.alert("Error", "Name and relationship are required");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await contactService.updateContact(
+        isEditing,
+        newContact.name,
+        newContact.relationship,
+        accessToken
+      );
+
+      if (response.success) {
+        await loadContacts();
+        resetForm();
+        Alert.alert("Success", "Contact updated successfully");
+      } else {
+        Alert.alert("Error", response.error || "Failed to update contact");
+      }
+    } catch (error) {
+      Alert.alert("Error", "Failed to update contact");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEditContact = (contact: Contact) => {
+    setNewContact({
+      name: contact.name,
+      phone: contact.phone,
+      relationship: contact.relationship,
+    });
+    setIsEditing(contact.id);
+    setIsOtpVerified(true); // Skip OTP for editing
+  };
 
   const handleDeleteContact = (id: string) => {
-    Alert.alert("Delete Contact", "Are you sure you want to delete this emergency contact?", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => setContacts(contacts.filter((contact) => contact.id !== id)),
-      },
-    ])
-  }
+    Alert.alert(
+      "Delete Contact",
+      "Are you sure you want to delete this emergency contact?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            if (!accessToken) return;
 
-  const handleCancel = () => {
-    setNewContact({ name: "", phone: "", relationship: "" })
-    setIsAdding(false)
-    setIsEditing(null)
-  }
+            try {
+              const response = await contactService.deleteContact(
+                id,
+                accessToken
+              );
+              if (response.success) {
+                await loadContacts();
+                Alert.alert("Success", "Contact deleted successfully");
+              } else {
+                Alert.alert(
+                  "Error",
+                  response.error || "Failed to delete contact"
+                );
+              }
+            } catch (error) {
+              Alert.alert("Error", "Failed to delete contact");
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const resetForm = () => {
+    setNewContact({ name: "", phone: "", relationship: "" });
+    setOtp("");
+    setIsOtpSent(false);
+    setIsOtpVerified(false);
+    setIsAdding(false);
+    setIsEditing(null);
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -80,7 +249,10 @@ export default function ContactsScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Emergency Contacts</Text>
           {!isAdding && !isEditing && (
-            <TouchableOpacity style={styles.addButton} onPress={() => setIsAdding(true)}>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setIsAdding(true)}
+            >
               <Ionicons name="add" size={24} color="#0a7ea4" />
             </TouchableOpacity>
           )}
@@ -88,7 +260,9 @@ export default function ContactsScreen() {
 
         {(isAdding || isEditing) && (
           <Card style={styles.formCard}>
-            <Text style={styles.formTitle}>{isEditing ? "Edit Contact" : "Add New Contact"}</Text>
+            <Text style={styles.formTitle}>
+              {isEditing ? "Edit Contact" : "Add New Contact"}
+            </Text>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Name</Text>
@@ -96,20 +270,62 @@ export default function ContactsScreen() {
                 style={styles.input}
                 placeholder="Contact name"
                 value={newContact.name}
-                onChangeText={(text) => setNewContact({ ...newContact, name: text })}
+                onChangeText={(text) =>
+                  setNewContact({ ...newContact, name: text })
+                }
               />
             </View>
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Phone Number</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Phone number with country code"
-                value={newContact.phone}
-                onChangeText={(text) => setNewContact({ ...newContact, phone: text })}
-                keyboardType="phone-pad"
-              />
+              <View style={styles.phoneContainer}>
+                <TextInput
+                  style={[styles.input, { flex: 1, marginRight: 8 }]}
+                  placeholder="Phone number with country code"
+                  value={newContact.phone}
+                  onChangeText={(text) =>
+                    setNewContact({ ...newContact, phone: text })
+                  }
+                  keyboardType="phone-pad"
+                  editable={!isEditing}
+                />
+                {!isEditing && !isOtpVerified && (
+                  <Button
+                    style={[
+                      styles.otpButton,
+                      isOtpSent && styles.otpButtonSent,
+                    ]}
+                    onPress={isOtpSent ? handleVerifyOTP : handleSendOTP}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? "..." : isOtpSent ? "Verify" : "Send OTP"}
+                  </Button>
+                )}
+                {isOtpVerified && (
+                  <View style={styles.verifiedBadge}>
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color="#4CAF50"
+                    />
+                  </View>
+                )}
+              </View>
             </View>
+
+            {isOtpSent && !isOtpVerified && !isEditing && (
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Enter OTP</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter 4-digit OTP"
+                  value={otp}
+                  onChangeText={setOtp}
+                  keyboardType="numeric"
+                  maxLength={4}
+                />
+              </View>
+            )}
 
             <View style={styles.inputContainer}>
               <Text style={styles.label}>Relationship</Text>
@@ -117,16 +333,28 @@ export default function ContactsScreen() {
                 style={styles.input}
                 placeholder="Family, Friend, etc."
                 value={newContact.relationship}
-                onChangeText={(text) => setNewContact({ ...newContact, relationship: text })}
+                onChangeText={(text) =>
+                  setNewContact({ ...newContact, relationship: text })
+                }
               />
             </View>
 
             <View style={styles.buttonRow}>
-              <Button style={[styles.formButton, styles.cancelButton]} onPress={handleCancel}>
+              <Button
+                style={[styles.formButton, styles.cancelButton]}
+                onPress={resetForm}
+              >
                 Cancel
               </Button>
-              <Button style={styles.formButton} onPress={isEditing ? handleUpdateContact : handleAddContact}>
-                {isEditing ? "Update" : "Add"}
+              <Button
+                style={[
+                  styles.formButton,
+                  !isOtpVerified && !isEditing && styles.disabledButton,
+                ]}
+                onPress={isEditing ? handleUpdateContact : handleAddContact}
+                disabled={(!isOtpVerified && !isEditing) || isLoading}
+              >
+                {isLoading ? "..." : isEditing ? "Update" : "Add"}
               </Button>
             </View>
           </Card>
@@ -142,13 +370,15 @@ export default function ContactsScreen() {
                 <View style={styles.contactDetails}>
                   <Text style={styles.contactName}>{contact.name}</Text>
                   <Text style={styles.contactPhone}>{contact.phone}</Text>
-                  {contact.relationship && <Text style={styles.contactRelationship}>{contact.relationship}</Text>}
+                  <Text style={styles.contactRelationship}>
+                    {contact.relationship}
+                  </Text>
                 </View>
               </View>
               <View style={styles.contactActions}>
                 <TouchableOpacity
                   style={[styles.actionButton, { borderColor }]}
-                  onPress={() => handleEditContact(contact.id)}
+                  onPress={() => handleEditContact(contact)}
                 >
                   <Ionicons name="create-outline" size={20} color="#0a7ea4" />
                 </TouchableOpacity>
@@ -163,10 +393,20 @@ export default function ContactsScreen() {
           ))
         ) : (
           <View style={styles.emptyState}>
-            <Ionicons name="people-outline" size={48} color={textColor} style={{ opacity: 0.5 }} />
-            <Text style={styles.emptyStateText}>No emergency contacts added yet</Text>
+            <Ionicons
+              name="people-outline"
+              size={48}
+              color={textColor}
+              style={{ opacity: 0.5 }}
+            />
+            <Text style={styles.emptyStateText}>
+              No emergency contacts added yet
+            </Text>
             {!isAdding && (
-              <Button style={styles.emptyStateButton} onPress={() => setIsAdding(true)}>
+              <Button
+                style={styles.emptyStateButton}
+                onPress={() => setIsAdding(true)}
+              >
                 Add Your First Contact
               </Button>
             )}
@@ -174,7 +414,7 @@ export default function ContactsScreen() {
         )}
       </ScrollView>
     </SafeAreaView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
@@ -217,6 +457,21 @@ const styles = StyleSheet.create({
   input: {
     width: "100%",
   },
+  phoneContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  otpButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    minWidth: 80,
+  },
+  otpButtonSent: {
+    backgroundColor: "#4CAF50",
+  },
+  verifiedBadge: {
+    marginLeft: 8,
+  },
   buttonRow: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -228,6 +483,9 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     backgroundColor: "#888888",
+  },
+  disabledButton: {
+    opacity: 0.5,
   },
   contactCard: {
     marginBottom: 12,
@@ -291,4 +549,4 @@ const styles = StyleSheet.create({
   emptyStateButton: {
     minWidth: 200,
   },
-})
+});
