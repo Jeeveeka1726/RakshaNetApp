@@ -1,5 +1,4 @@
 import 'dart:math';
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_background_service_android/flutter_background_service_android.dart';
@@ -13,6 +12,11 @@ void main() async {
   runApp(MyApp());
 }
 
+bool onIosBackground(ServiceInstance service) {
+  WidgetsFlutterBinding.ensureInitialized();
+  return true;
+}
+
 Future<void> initializeService() async {
   final service = FlutterBackgroundService();
 
@@ -21,13 +25,17 @@ Future<void> initializeService() async {
       onStart: onStart,
       autoStart: true,
       isForegroundMode: true,
-      foregroundServiceNotificationTitle: "Safety Mode",
-      foregroundServiceNotificationContent: "Monitoring for sudden movements...",
+      notificationChannelId: 'safety_monitor',
+      initialNotificationTitle: 'Safety Mode',
+      initialNotificationContent: 'Monitoring for sudden movements...',
     ),
-    iosConfiguration: IosConfiguration(),
+    iosConfiguration: IosConfiguration(
+      onForeground: onStart,
+      onBackground: onIosBackground,
+    ),
   );
 
-  await service.start();
+  await service.startService();
 }
 
 @pragma('vm:entry-point')
@@ -36,19 +44,17 @@ void onStart(ServiceInstance service) async {
   AccelerometerEvent? lastEvent;
   DateTime lastTriggered = DateTime.now();
 
+  // No need to check isRunning() inside here
   accelerometerEvents.listen((event) async {
-    if (!service.isRunning()) return;
-
     final now = DateTime.now();
     if (lastEvent != null) {
       double delta = sqrt(
         pow(event.x - lastEvent!.x, 2) +
-        pow(event.y - lastEvent!.y, 2) +
-        pow(event.z - lastEvent!.z, 2),
+            pow(event.y - lastEvent!.y, 2) +
+            pow(event.z - lastEvent!.z, 2),
       );
 
       if (delta > 15 && now.difference(lastTriggered).inSeconds > 5) {
-        // Motion detected - trigger sound
         lastTriggered = now;
         await player.play(AssetSource('alarm.mp3'));
       }
@@ -67,16 +73,17 @@ void onStart(ServiceInstance service) async {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Women Safety App',
-      home: HomeScreen(),
-    );
+    return MaterialApp(title: 'Women Safety App', home: HomeScreen());
   }
 }
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }

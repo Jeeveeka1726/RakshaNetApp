@@ -34,6 +34,9 @@ dependencies:
   assets_audio_player: ^3.0.3+6
   flutter_background_service: ^2.4.6
   flutter_local_notifications: ^17.0.0
+  audioplayers: ^6.4.0
+  permission_handler: ^12.0.0+1
+  flutter_background_service_android: ^3.0.3
 
 
 dev_dependencies:

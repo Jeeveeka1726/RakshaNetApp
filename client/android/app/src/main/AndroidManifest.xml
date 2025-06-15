@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.example.client">
 
     <!-- Required Permissions -->
@@ -38,7 +39,9 @@
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:permission="android.permission.FOREGROUND_SERVICE"
-            android:exported="false" />
+            android:exported="false"
+            tools:replace="android:exported" />
+
 
         <!-- Boot Receiver (for autostart after reboot) -->
         <receiver
