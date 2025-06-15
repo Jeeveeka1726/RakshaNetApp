@@ -6,6 +6,7 @@ import 'package:flutter_background_service_android/flutter_background_service_an
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:speech_to_text/speech_to_text.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +23,7 @@ Future<void> initializeService() async {
       autoStart: true,
       isForegroundMode: true,
       foregroundServiceNotificationTitle: "Safety Mode",
-      foregroundServiceNotificationContent: "Monitoring for sudden movements...",
+      foregroundServiceNotificationContent: "Monitoring for sudden movements and keywords...",
     ),
     iosConfiguration: IosConfiguration(),
   );
@@ -36,6 +37,30 @@ void onStart(ServiceInstance service) async {
   AccelerometerEvent? lastEvent;
   DateTime lastTriggered = DateTime.now();
 
+  final SpeechToText speech = SpeechToText();
+  bool speechEnabled = await speech.initialize(
+    onStatus: (status) => print("Speech status: $status"),
+    onError: (error) => print("Speech error: $error"),
+  );
+
+  if (speechEnabled) {
+    speech.listen(
+      onResult: (result) async {
+        final recognizedWords = result.recognizedWords.toLowerCase();
+        print("Heard: $recognizedWords");
+
+        if ((recognizedWords.contains("raksha") || recognizedWords.contains("help")) &&
+            DateTime.now().difference(lastTriggered).inSeconds > 5) {
+          lastTriggered = DateTime.now();
+          await player.play(AssetSource('alarm.mp3'));
+        }
+      },
+      listenMode: ListenMode.confirmation,
+      partialResults: true,
+      cancelOnError: false,
+    );
+  }
+
   accelerometerEvents.listen((event) async {
     if (!service.isRunning()) return;
 
@@ -48,7 +73,6 @@ void onStart(ServiceInstance service) async {
       );
 
       if (delta > 15 && now.difference(lastTriggered).inSeconds > 5) {
-        // Motion detected - trigger sound
         lastTriggered = now;
         await player.play(AssetSource('alarm.mp3'));
       }
@@ -61,6 +85,7 @@ void onStart(ServiceInstance service) async {
       service.setAsForegroundService();
     });
     service.on('stopService').listen((event) {
+      speech.stop();
       service.stopSelf();
     });
   }
@@ -93,6 +118,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _askPermissions() async {
     await Permission.activityRecognition.request();
+    await Permission.microphone.request();
     await Permission.notification.request();
     await Permission.ignoreBatteryOptimizations.request();
   }

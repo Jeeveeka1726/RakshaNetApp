@@ -1,28 +1,30 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.client">
 
-    <!-- Required Permissions -->
+    <!-- ✅ Required Permissions -->
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
-    <!-- Optional: For detecting motion even when the screen is off (power-intensive) -->
     <uses-permission android:name="android.permission.BODY_SENSORS" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <application
-        android:label="client"
         android:name="${applicationName}"
+        android:label="client"
         android:icon="@mipmap/ic_launcher">
 
-        <!-- Main Activity -->
+        <!-- ✅ Main Flutter Activity -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
-            android:taskAffinity=""
             android:theme="@style/LaunchTheme"
-            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"
             android:hardwareAccelerated="true"
-            android:windowSoftInputMode="adjustResize">
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode">
 
             <meta-data
                 android:name="io.flutter.embedding.android.NormalTheme"
@@ -34,36 +36,37 @@
             </intent-filter>
         </activity>
 
-        <!-- Foreground Service -->
+        <!-- ✅ Foreground Service -->
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
             android:permission="android.permission.FOREGROUND_SERVICE"
             android:exported="false" />
 
-        <!-- Boot Receiver (for autostart after reboot) -->
+        <!-- ✅ Boot Receiver to Auto-Start Service -->
         <receiver
+            android:name="id.flutter.flutter_background_service.BootReceiver"
             android:enabled="true"
             android:exported="true"
-            android:permission="android.permission.RECEIVE_BOOT_COMPLETED"
-            android:name="id.flutter.flutter_background_service.BootReceiver">
+            android:permission="android.permission.RECEIVE_BOOT_COMPLETED">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.REBOOT" />
             </intent-filter>
         </receiver>
 
-        <!-- Flutter Required Metadata -->
+        <!-- ✅ Flutter Engine Metadata -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
 
     </application>
 
-    <!-- Required by some Flutter plugins (like text processing) -->
+    <!-- ✅ Required for Flutter plugins (e.g., ProcessText) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.PROCESS_TEXT" />
             <data android:mimeType="text/plain" />
         </intent>
     </queries>
+
 </manifest>
