@@ -1,12 +1,12 @@
 # Node modules
-node_modules/
+node_modules
 
 # Expo-specific
-.expo/
-.expo-shared/
+.expo
+.expo-shared
 
 # VS Code settings
-.vscode/
+.vscode
 
 # macOS system files
 .DS_Store
@@ -27,3 +27,4 @@ dist/
 
 # Misc
 *.log
+node_modules
