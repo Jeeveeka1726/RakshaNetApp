@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'register_page.dart';
 import 'dashboard_page.dart';
+import 'services/api_service.dart';
 
 class LoginPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -31,20 +32,45 @@ class _LoginPageState extends State<LoginPage> {
         _isLoading = true;
       });
 
-      // Simulate login process
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        final result = await ApiService.signIn(
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
 
-      setState(() {
-        _isLoading = false;
-      });
+        setState(() {
+          _isLoading = false;
+        });
 
-      // Navigate to dashboard
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DashboardPage(toggleTheme: widget.toggleTheme),
-        ),
-      );
+        if (result['success']) {
+          // Navigate to dashboard
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => DashboardPage(toggleTheme: widget.toggleTheme),
+            ),
+          );
+        } else {
+          // Show error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['error'] ?? 'Login failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'emergency_contacts_page.dart';
+import 'services/api_service.dart';
 
 class RegisterPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -34,21 +35,50 @@ class _RegisterPageState extends State<RegisterPage> {
         _isLoading = true;
       });
 
-      // Simulate registration process
-      await Future.delayed(const Duration(seconds: 2));
+      try {
+        final result = await ApiService.signUp(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+          age: _ageController.text.isNotEmpty 
+              ? int.tryParse(_ageController.text) 
+              : null,
+        );
 
-      setState(() {
-        _isLoading = false;
-      });
+        setState(() {
+          _isLoading = false;
+        });
 
-      // Navigate to emergency contacts page
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) =>
-              EmergencyContactsPage(toggleTheme: widget.toggleTheme),
-        ),
-      );
+        if (result['success']) {
+          // Navigate to emergency contacts page
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) =>
+                  EmergencyContactsPage(toggleTheme: widget.toggleTheme),
+            ),
+          );
+        } else {
+          // Show error
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result['error'] ?? 'Registration failed'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } catch (e) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('An error occurred: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -112,16 +142,15 @@ class _RegisterPageState extends State<RegisterPage> {
                   controller: _ageController,
                   keyboardType: TextInputType.number,
                   decoration: const InputDecoration(
-                    labelText: 'Age',
+                    labelText: 'Age (Optional)',
                     prefixIcon: Icon(Icons.calendar_today),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter your age';
-                    }
-                    final age = int.tryParse(value);
-                    if (age == null || age < 13 || age > 120) {
-                      return 'Please enter a valid age (13-120)';
+                    if (value != null && value.isNotEmpty) {
+                      final age = int.tryParse(value);
+                      if (age == null || age < 13 || age > 120) {
+                        return 'Please enter a valid age (13-120)';
+                      }
                     }
                     return null;
                   },

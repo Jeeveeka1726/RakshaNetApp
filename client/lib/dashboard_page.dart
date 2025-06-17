@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'services/api_service.dart';
+import 'models/contact.dart';
+import 'contacts_management_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -15,6 +20,8 @@ class _DashboardPageState extends State<DashboardPage>
   bool _sosActivated = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  List<Contact> _emergencyContacts = [];
+  bool _isLoadingContacts = false;
 
   @override
   void initState() {
@@ -30,6 +37,8 @@ class _DashboardPageState extends State<DashboardPage>
       parent: _pulseController,
       curve: Curves.easeInOut,
     ));
+    
+    _loadEmergencyContacts();
   }
 
   @override
@@ -38,7 +47,56 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
-  void _activateSOS() {
+  Future<void> _loadEmergencyContacts() async {
+    setState(() {
+      _isLoadingContacts = true;
+    });
+
+    try {
+      final result = await ApiService.getContacts();
+      if (result['success']) {
+        setState(() {
+          _emergencyContacts = (result['data']['contacts'] as List)
+              .map((contact) => Contact.fromJson(contact))
+              .toList();
+        });
+      }
+    } catch (e) {
+      print('Error loading contacts: $e');
+    } finally {
+      setState(() {
+        _isLoadingContacts = false;
+      });
+    }
+  }
+
+  Future<String> _getCurrentLocation() async {
+    try {
+      // Check location permission
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          return 'Location permission denied';
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        return 'Location permissions are permanently denied';
+      }
+
+      // Get current position
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      return 'https://maps.google.com/?q=${position.latitude},${position.longitude}';
+    } catch (e) {
+      return 'Unable to get location: ${e.toString()}';
+    }
+  }
+
+  void _activateSOS() async {
     setState(() {
       _sosActivated = true;
     });
@@ -47,14 +105,53 @@ class _DashboardPageState extends State<DashboardPage>
     // Vibrate
     HapticFeedback.heavyImpact();
     
+    // Get current location
+    String location = await _getCurrentLocation();
+    
+    // Create SOS message
+    String sosMessage = '''
+🚨 EMERGENCY ALERT 🚨
+This is an automated SOS message from RakshaNet.
+
+I need immediate help!
+
+My current location: $location
+
+Please contact me or emergency services immediately.
+
+Time: ${DateTime.now().toString()}
+''';
+
+    // Send SOS to all emergency contacts
+    bool anySuccess = false;
+    for (Contact contact in _emergencyContacts) {
+      try {
+        // Send SMS
+        final smsResult = await ApiService.sendSosSms(sosMessage);
+        if (smsResult['success']) {
+          anySuccess = true;
+        }
+
+        // Make call
+        final callResult = await ApiService.makeSosCall(contact.phone, sosMessage);
+        if (callResult['success']) {
+          anySuccess = true;
+        }
+      } catch (e) {
+        print('Error sending SOS to ${contact.name}: $e');
+      }
+    }
+    
     // Show confirmation dialog
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
         title: const Text('SOS Activated!'),
-        content: const Text(
-          'Emergency alert has been sent to your contacts. Help is on the way.',
+        content: Text(
+          anySuccess 
+            ? 'Emergency alert has been sent to your contacts. Help is on the way.'
+            : 'SOS activated but there was an issue sending alerts. Please call emergency services directly.',
         ),
         actions: [
           TextButton(
@@ -62,7 +159,7 @@ class _DashboardPageState extends State<DashboardPage>
               Navigator.pop(context);
               _deactivateSOS();
             },
-            child: const Text('Cancel'),
+            child: const Text('OK'),
           ),
         ],
       ),
@@ -75,6 +172,11 @@ class _DashboardPageState extends State<DashboardPage>
     });
     _pulseController.stop();
     _pulseController.reset();
+  }
+
+  void _logout() async {
+    await ApiService.removeToken();
+    Navigator.pushReplacementNamed(context, '/login');
   }
 
   @override
@@ -90,11 +192,25 @@ class _DashboardPageState extends State<DashboardPage>
             icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
             onPressed: widget.toggleTheme,
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // Settings functionality
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              if (value == 'logout') {
+                _logout();
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 8),
+                    Text('Logout'),
+                  ],
+                ),
+              ),
+            ],
+            child: const Icon(Icons.more_vert),
           ),
         ],
       ),
@@ -190,23 +306,25 @@ class _DashboardPageState extends State<DashboardPage>
               ),
               const SizedBox(height: 24),
 
-              // Info Card
+              // Emergency Contacts Status
               Card(
-                color: Colors.blue[50],
+                color: _emergencyContacts.isNotEmpty ? Colors.green[50] : Colors.orange[50],
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: [
                       Icon(
-                        Icons.info,
-                        color: Colors.blue[700],
+                        _emergencyContacts.isNotEmpty ? Icons.check_circle : Icons.warning,
+                        color: _emergencyContacts.isNotEmpty ? Colors.green[700] : Colors.orange[700],
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Shake your phone or shout "Raksha" to auto-activate SOS',
+                          _emergencyContacts.isNotEmpty 
+                            ? '${_emergencyContacts.length} emergency contact(s) configured'
+                            : 'No emergency contacts configured',
                           style: TextStyle(
-                            color: Colors.blue[700],
+                            color: _emergencyContacts.isNotEmpty ? Colors.green[700] : Colors.orange[700],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -227,30 +345,62 @@ class _DashboardPageState extends State<DashboardPage>
                     _buildQuickActionCard(
                       icon: Icons.contacts,
                       title: 'Emergency\nContacts',
-                      onTap: () {
-                        // Navigate to emergency contacts
+                      onTap: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ContactsManagementPage(),
+                          ),
+                        );
+                        _loadEmergencyContacts(); // Refresh contacts when returning
                       },
                     ),
                     _buildQuickActionCard(
                       icon: Icons.location_on,
                       title: 'Share\nLocation',
-                      onTap: () {
-                        // Share location functionality
+                      onTap: () async {
+                        String location = await _getCurrentLocation();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Current location: $location'),
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
                       },
                     ),
                     _buildQuickActionCard(
                       icon: Icons.local_hospital,
-                      title: 'Medical\nInfo',
+                      title: 'Emergency\nNumbers',
                       onTap: () {
-                        // Medical info functionality
+                        showDialog(
+                          context: context,
+                          builder: (context) => AlertDialog(
+                            title: const Text('Emergency Numbers'),
+                            content: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Police: 100'),
+                                Text('Fire: 101'),
+                                Text('Ambulance: 108'),
+                                Text('Women Helpline: 1091'),
+                                Text('Child Helpline: 1098'),
+                              ],
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('Close'),
+                              ),
+                            ],
+                          ),
+                        );
                       },
                     ),
                     _buildQuickActionCard(
-                      icon: Icons.history,
-                      title: 'Alert\nHistory',
-                      onTap: () {
-                        // Alert history functionality
-                      },
+                      icon: Icons.refresh,
+                      title: 'Refresh\nContacts',
+                      onTap: _loadEmergencyContacts,
                     ),
                   ],
                 ),
