@@ -10,6 +10,11 @@ import 'background_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Request permissions before starting service
+  await Permission.notification.request();
+  await Permission.locationWhenInUse.request();
+  
   await initializeService();
   runApp(const RakshaNetApp());
 }
