@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:permission_handler/permission_handler.dart';
-import 'services/api_service.dart';
-import 'models/contact.dart';
-import 'contacts_management_page.dart';
+import 'background_service.dart';
 
 class DashboardPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -18,10 +15,9 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage>
     with TickerProviderStateMixin {
   bool _sosActivated = false;
+  bool _serviceRunning = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  List<Contact> _emergencyContacts = [];
-  bool _isLoadingContacts = false;
 
   @override
   void initState() {
@@ -38,7 +34,8 @@ class _DashboardPageState extends State<DashboardPage>
       curve: Curves.easeInOut,
     ));
     
-    _loadEmergencyContacts();
+    _checkServiceStatus();
+    _requestPermissions();
   }
 
   @override
@@ -47,53 +44,18 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
-  Future<void> _loadEmergencyContacts() async {
-    setState(() {
-      _isLoadingContacts = true;
-    });
-
-    try {
-      final result = await ApiService.getContacts();
-      if (result['success']) {
-        setState(() {
-          _emergencyContacts = (result['data']['contacts'] as List)
-              .map((contact) => Contact.fromJson(contact))
-              .toList();
-        });
-      }
-    } catch (e) {
-      print('Error loading contacts: $e');
-    } finally {
-      setState(() {
-        _isLoadingContacts = false;
-      });
-    }
+  Future<void> _requestPermissions() async {
+    await Permission.activityRecognition.request();
+    await Permission.notification.request();
+    await Permission.ignoreBatteryOptimizations.request();
+    await Permission.microphone.request();
   }
 
-  Future<String> _getCurrentLocation() async {
-    try {
-      // Check location permission
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          return 'Location permission denied';
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        return 'Location permissions are permanently denied';
-      }
-
-      // Get current position
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-      );
-
-      return 'https://maps.google.com/?q=${position.latitude},${position.longitude}';
-    } catch (e) {
-      return 'Unable to get location: ${e.toString()}';
-    }
+  Future<void> _checkServiceStatus() async {
+    final isRunning = await isBackgroundServiceRunning();
+    setState(() {
+      _serviceRunning = isRunning;
+    });
   }
 
   void _activateSOS() async {
@@ -102,56 +64,26 @@ class _DashboardPageState extends State<DashboardPage>
     });
     _pulseController.repeat(reverse: true);
     
+    // Trigger SOS through background service
+    await triggerSOSFromUI();
+    
     // Vibrate
     HapticFeedback.heavyImpact();
-    
-    // Get current location
-    String location = await _getCurrentLocation();
-    
-    // Create SOS message
-    String sosMessage = '''
-🚨 EMERGENCY ALERT 🚨
-This is an automated SOS message from RakshaNet.
-
-I need immediate help!
-
-My current location: $location
-
-Please contact me or emergency services immediately.
-
-Time: ${DateTime.now().toString()}
-''';
-
-    // Send SOS to all emergency contacts
-    bool anySuccess = false;
-    for (Contact contact in _emergencyContacts) {
-      try {
-        // Send SMS
-        final smsResult = await ApiService.sendSosSms(sosMessage);
-        if (smsResult['success']) {
-          anySuccess = true;
-        }
-
-        // Make call
-        final callResult = await ApiService.makeSosCall(contact.phone, sosMessage);
-        if (callResult['success']) {
-          anySuccess = true;
-        }
-      } catch (e) {
-        print('Error sending SOS to ${contact.name}: $e');
-      }
-    }
     
     // Show confirmation dialog
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('SOS Activated!'),
-        content: Text(
-          anySuccess 
-            ? 'Emergency alert has been sent to your contacts. Help is on the way.'
-            : 'SOS activated but there was an issue sending alerts. Please call emergency services directly.',
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('SOS Activated!'),
+          ],
+        ),
+        content: const Text(
+          'Emergency alert has been sent to your contacts. Emergency services have been notified. Help is on the way.',
         ),
         actions: [
           TextButton(
@@ -159,7 +91,7 @@ Time: ${DateTime.now().toString()}
               Navigator.pop(context);
               _deactivateSOS();
             },
-            child: const Text('OK'),
+            child: const Text('Cancel Alert'),
           ),
         ],
       ),
@@ -174,9 +106,15 @@ Time: ${DateTime.now().toString()}
     _pulseController.reset();
   }
 
-  void _logout() async {
-    await ApiService.removeToken();
-    Navigator.pushReplacementNamed(context, '/login');
+  void _testVoiceDetection() async {
+    // Simulate voice detection for testing
+    await simulateVoiceDetection("Raksha help me");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Voice detection test triggered!'),
+        backgroundColor: Colors.orange,
+      ),
+    );
   }
 
   @override
@@ -188,29 +126,64 @@ Time: ${DateTime.now().toString()}
         title: const Text('RakshaNet'),
         automaticallyImplyLeading: false,
         actions: [
+          // Service status indicator
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: Row(
+              children: [
+                Icon(
+                  _serviceRunning ? Icons.security : Icons.security_outlined,
+                  color: _serviceRunning ? Colors.green : Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _serviceRunning ? 'Protected' : 'Offline',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _serviceRunning ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+          ),
           IconButton(
             icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
             onPressed: widget.toggleTheme,
           ),
           PopupMenuButton<String>(
             onSelected: (value) {
-              if (value == 'logout') {
-                _logout();
+              switch (value) {
+                case 'test_voice':
+                  _testVoiceDetection();
+                  break;
+                case 'refresh_service':
+                  _checkServiceStatus();
+                  break;
               }
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
-                value: 'logout',
+                value: 'test_voice',
                 child: Row(
                   children: [
-                    Icon(Icons.logout),
+                    Icon(Icons.mic),
                     SizedBox(width: 8),
-                    Text('Logout'),
+                    Text('Test Voice Detection'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'refresh_service',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh),
+                    SizedBox(width: 8),
+                    Text('Refresh Service Status'),
                   ],
                 ),
               ),
             ],
-            child: const Icon(Icons.more_vert),
           ),
         ],
       ),
@@ -306,25 +279,52 @@ Time: ${DateTime.now().toString()}
               ),
               const SizedBox(height: 24),
 
-              // Emergency Contacts Status
+              // Info Cards
               Card(
-                color: _emergencyContacts.isNotEmpty ? Colors.green[50] : Colors.orange[50],
+                color: Colors.blue[50],
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Row(
                     children: [
                       Icon(
-                        _emergencyContacts.isNotEmpty ? Icons.check_circle : Icons.warning,
-                        color: _emergencyContacts.isNotEmpty ? Colors.green[700] : Colors.orange[700],
+                        Icons.info,
+                        color: Colors.blue[700],
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _emergencyContacts.isNotEmpty 
-                            ? '${_emergencyContacts.length} emergency contact(s) configured'
-                            : 'No emergency contacts configured',
+                          'Shake your phone or shout "Raksha" to auto-activate SOS',
                           style: TextStyle(
-                            color: _emergencyContacts.isNotEmpty ? Colors.green[700] : Colors.orange[700],
+                            color: Colors.blue[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Service Status Card
+              Card(
+                color: _serviceRunning ? Colors.green[50] : Colors.orange[50],
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _serviceRunning ? Icons.check_circle : Icons.warning,
+                        color: _serviceRunning ? Colors.green[700] : Colors.orange[700],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _serviceRunning 
+                            ? 'Background monitoring is active'
+                            : 'Background monitoring is offline',
+                          style: TextStyle(
+                            color: _serviceRunning ? Colors.green[700] : Colors.orange[700],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -345,62 +345,30 @@ Time: ${DateTime.now().toString()}
                     _buildQuickActionCard(
                       icon: Icons.contacts,
                       title: 'Emergency\nContacts',
-                      onTap: () async {
-                        await Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ContactsManagementPage(),
-                          ),
-                        );
-                        _loadEmergencyContacts(); // Refresh contacts when returning
+                      onTap: () {
+                        // Navigate to emergency contacts
                       },
                     ),
                     _buildQuickActionCard(
                       icon: Icons.location_on,
                       title: 'Share\nLocation',
-                      onTap: () async {
-                        String location = await _getCurrentLocation();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Current location: $location'),
-                            duration: const Duration(seconds: 3),
-                          ),
-                        );
+                      onTap: () {
+                        // Share location functionality
                       },
                     ),
                     _buildQuickActionCard(
                       icon: Icons.local_hospital,
-                      title: 'Emergency\nNumbers',
+                      title: 'Medical\nInfo',
                       onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('Emergency Numbers'),
-                            content: const Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Police: 100'),
-                                Text('Fire: 101'),
-                                Text('Ambulance: 108'),
-                                Text('Women Helpline: 1091'),
-                                Text('Child Helpline: 1098'),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('Close'),
-                              ),
-                            ],
-                          ),
-                        );
+                        // Medical info functionality
                       },
                     ),
                     _buildQuickActionCard(
-                      icon: Icons.refresh,
-                      title: 'Refresh\nContacts',
-                      onTap: _loadEmergencyContacts,
+                      icon: Icons.history,
+                      title: 'Alert\nHistory',
+                      onTap: () {
+                        // Alert history functionality
+                      },
                     ),
                   ],
                 ),

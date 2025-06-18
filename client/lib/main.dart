@@ -1,8 +1,16 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter_background_service/flutter_background_service.dart';
+import 'package:sensors_plus/sensors_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:flutter/services.dart';
 import 'login_page.dart';
 import 'theme.dart';
+import 'background_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await initializeService();
   runApp(const RakshaNetApp());
 }
 
