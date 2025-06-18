@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'background_service.dart';
 
 class DashboardPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -13,6 +15,7 @@ class DashboardPage extends StatefulWidget {
 class _DashboardPageState extends State<DashboardPage>
     with TickerProviderStateMixin {
   bool _sosActivated = false;
+  bool _serviceRunning = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -30,6 +33,9 @@ class _DashboardPageState extends State<DashboardPage>
       parent: _pulseController,
       curve: Curves.easeInOut,
     ));
+    
+    _checkServiceStatus();
+    _requestPermissions();
   }
 
   @override
@@ -38,11 +44,28 @@ class _DashboardPageState extends State<DashboardPage>
     super.dispose();
   }
 
-  void _activateSOS() {
+  Future<void> _requestPermissions() async {
+    await Permission.activityRecognition.request();
+    await Permission.notification.request();
+    await Permission.ignoreBatteryOptimizations.request();
+    await Permission.microphone.request();
+  }
+
+  Future<void> _checkServiceStatus() async {
+    final isRunning = await isBackgroundServiceRunning();
+    setState(() {
+      _serviceRunning = isRunning;
+    });
+  }
+
+  void _activateSOS() async {
     setState(() {
       _sosActivated = true;
     });
     _pulseController.repeat(reverse: true);
+    
+    // Trigger SOS through background service
+    await triggerSOSFromUI();
     
     // Vibrate
     HapticFeedback.heavyImpact();
@@ -52,9 +75,15 @@ class _DashboardPageState extends State<DashboardPage>
       context: context,
       barrierDismissible: false,
       builder: (context) => AlertDialog(
-        title: const Text('SOS Activated!'),
+        title: const Row(
+          children: [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('SOS Activated!'),
+          ],
+        ),
         content: const Text(
-          'Emergency alert has been sent to your contacts. Help is on the way.',
+          'Emergency alert has been sent to your contacts. Emergency services have been notified. Help is on the way.',
         ),
         actions: [
           TextButton(
@@ -62,7 +91,7 @@ class _DashboardPageState extends State<DashboardPage>
               Navigator.pop(context);
               _deactivateSOS();
             },
-            child: const Text('Cancel'),
+            child: const Text('Cancel Alert'),
           ),
         ],
       ),
@@ -77,6 +106,17 @@ class _DashboardPageState extends State<DashboardPage>
     _pulseController.reset();
   }
 
+  void _testVoiceDetection() async {
+    // Simulate voice detection for testing
+    await simulateVoiceDetection("Raksha help me");
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Voice detection test triggered!'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -86,15 +126,64 @@ class _DashboardPageState extends State<DashboardPage>
         title: const Text('RakshaNet'),
         automaticallyImplyLeading: false,
         actions: [
+          // Service status indicator
+          Container(
+            margin: const EdgeInsets.only(right: 8),
+            child: Row(
+              children: [
+                Icon(
+                  _serviceRunning ? Icons.security : Icons.security_outlined,
+                  color: _serviceRunning ? Colors.green : Colors.orange,
+                  size: 20,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  _serviceRunning ? 'Protected' : 'Offline',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: _serviceRunning ? Colors.green : Colors.orange,
+                  ),
+                ),
+              ],
+            ),
+          ),
           IconButton(
             icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode),
             onPressed: widget.toggleTheme,
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () {
-              // Settings functionality
+          PopupMenuButton<String>(
+            onSelected: (value) {
+              switch (value) {
+                case 'test_voice':
+                  _testVoiceDetection();
+                  break;
+                case 'refresh_service':
+                  _checkServiceStatus();
+                  break;
+              }
             },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'test_voice',
+                child: Row(
+                  children: [
+                    Icon(Icons.mic),
+                    SizedBox(width: 8),
+                    Text('Test Voice Detection'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'refresh_service',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh),
+                    SizedBox(width: 8),
+                    Text('Refresh Service Status'),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -190,7 +279,7 @@ class _DashboardPageState extends State<DashboardPage>
               ),
               const SizedBox(height: 24),
 
-              // Info Card
+              // Info Cards
               Card(
                 color: Colors.blue[50],
                 child: Padding(
@@ -207,6 +296,35 @@ class _DashboardPageState extends State<DashboardPage>
                           'Shake your phone or shout "Raksha" to auto-activate SOS',
                           style: TextStyle(
                             color: Colors.blue[700],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              
+              // Service Status Card
+              Card(
+                color: _serviceRunning ? Colors.green[50] : Colors.orange[50],
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Row(
+                    children: [
+                      Icon(
+                        _serviceRunning ? Icons.check_circle : Icons.warning,
+                        color: _serviceRunning ? Colors.green[700] : Colors.orange[700],
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _serviceRunning 
+                            ? 'Background monitoring is active'
+                            : 'Background monitoring is offline',
+                          style: TextStyle(
+                            color: _serviceRunning ? Colors.green[700] : Colors.orange[700],
                             fontWeight: FontWeight.w500,
                           ),
                         ),
