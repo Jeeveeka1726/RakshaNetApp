@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'background_service.dart';
+import 'nearby_stations_page.dart';
+import 'enhanced_sos_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -59,44 +61,14 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   void _activateSOS() async {
-    setState(() {
-      _sosActivated = true;
-    });
-    _pulseController.repeat(reverse: true);
-    
-    // Trigger SOS through background service
-    await triggerSOSFromUI();
-    
-    // Vibrate
-    HapticFeedback.heavyImpact();
-    
-    // Show confirmation dialog
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning, color: Colors.red),
-            SizedBox(width: 8),
-            Text('SOS Activated!'),
-          ],
-        ),
-        content: const Text(
-          'Emergency alert has been sent to your contacts. Emergency services have been notified. Help is on the way.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(context);
-              _deactivateSOS();
-            },
-            child: const Text('Cancel Alert'),
-          ),
-        ],
-      ),
-    );
-  }
+  // Navigate to enhanced SOS page
+  Navigator.push(
+    context,
+    MaterialPageRoute(
+      builder: (context) => EnhancedSOSPage(),
+    ),
+  );
+}
 
   void _deactivateSOS() {
     setState(() {
@@ -350,10 +322,15 @@ class _DashboardPageState extends State<DashboardPage>
                       },
                     ),
                     _buildQuickActionCard(
-                      icon: Icons.location_on,
-                      title: 'Share\nLocation',
+                      icon: Icons.local_police,
+                      title: 'Nearby\nPolice',
                       onTap: () {
-                        // Share location functionality
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => NearbyStationsPage(),
+                          ),
+                        );
                       },
                     ),
                     _buildQuickActionCard(
