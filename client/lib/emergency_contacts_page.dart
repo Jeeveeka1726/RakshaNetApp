@@ -185,21 +185,23 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _continueToApp() {
-    if (_contacts.isNotEmpty) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (context) => DashboardPage(toggleTheme: widget.toggleTheme),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add at least one emergency contact'),
-          backgroundColor: Colors.orange,
-        ),
-      );
-    }
+    // Always allow continuing to app, even without contacts
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DashboardPage(toggleTheme: widget.toggleTheme),
+      ),
+    );
+  }
+
+  void _skipForNow() {
+    // Allow skipping contact setup
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DashboardPage(toggleTheme: widget.toggleTheme),
+      ),
+    );
   }
 
   @override
@@ -208,6 +210,15 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
       appBar: AppBar(
         title: const Text('Emergency Contacts'),
         automaticallyImplyLeading: false,
+        actions: [
+          TextButton(
+            onPressed: _skipForNow,
+            child: const Text(
+              'Skip',
+              style: TextStyle(color: Colors.white),
+            ),
+          ),
+        ],
       ),
       body: SafeArea(
         child: Padding(
@@ -225,7 +236,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Add trusted contacts who will be notified in case of emergency',
+                'Add trusted contacts who will be notified in case of emergency (Optional)',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.grey[600],
                     ),
@@ -376,7 +387,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
               const SizedBox(height: 16),
               ElevatedButton(
                 onPressed: _continueToApp,
-                child: const Text('Continue to App'),
+                child: Text(_contacts.isNotEmpty ? 'Continue to App' : 'Continue Without Contacts'),
               ),
             ],
           ),

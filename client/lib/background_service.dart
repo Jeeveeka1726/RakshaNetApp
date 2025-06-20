@@ -6,6 +6,7 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'services/api_service.dart';
 
 // Global notification plugin instance
 final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
@@ -30,7 +31,7 @@ Future<void> initializeService() async {
       notificationChannelId: 'raksha_safety_monitor',
       initialNotificationTitle: 'RakshaNet Safety Mode',
       initialNotificationContent: 'Monitoring for emergencies...',
-      foregroundServiceNotificationId: 888, // Add explicit notification ID
+      foregroundServiceNotificationId: 888,
     ),
     iosConfiguration: IosConfiguration(
       onForeground: onStart,
@@ -62,23 +63,19 @@ Future<void> _initializeNotifications() async {
 
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) {
-  // CRITICAL: Initialize binding and set foreground notification IMMEDIATELY
   WidgetsFlutterBinding.ensureInitialized();
 
   if (service is AndroidServiceInstance) {
-    // This MUST be called immediately, synchronously, no delays
     service.setForegroundNotificationInfo(
       title: "RakshaNet Safety Mode",
       content: "Monitoring for emergencies...",
     );
   }
 
-  // Initialize the rest asynchronously
   _initializeServiceAsync(service);
 }
 
 void _initializeServiceAsync(ServiceInstance service) async {
-  // Initialize notifications after foreground service is set
   try {
     await _initializeNotifications();
   } catch (e) {
@@ -90,7 +87,6 @@ void _initializeServiceAsync(ServiceInstance service) async {
   bool isListeningForVoice = false;
   Timer? voiceTimer;
 
-  // Set up accelerometer monitoring
   StreamSubscription? accelerometerSubscription;
   
   try {
@@ -103,10 +99,9 @@ void _initializeServiceAsync(ServiceInstance service) async {
           pow(event.z - lastEvent!.z, 2),
         );
 
-        // Threshold for shake detection (adjust as needed)
         if (delta > 15 && now.difference(lastTriggered).inSeconds > 5) {
           lastTriggered = now;
-          await _triggerEmergencyAlert("Shake detected");
+          await _triggerMotionSOS("Shake detected");
 
           if (!isListeningForVoice) {
             _startVoiceListening();
@@ -127,11 +122,10 @@ void _initializeServiceAsync(ServiceInstance service) async {
     print("Error setting up accelerometer: $e");
   }
 
-  // Set up service message handlers
   service.on('voice_detected').listen((event) async {
     final word = event?['word'] as String?;
     if (word?.toLowerCase().contains('raksha') == true) {
-      await _triggerEmergencyAlert("Voice command detected: $word");
+      await _triggerVoiceSOS("Voice command detected: $word");
     }
   });
 
@@ -145,7 +139,6 @@ void _initializeServiceAsync(ServiceInstance service) async {
     service.stopSelf();
   });
 
-  // Periodic status updates
   Timer.periodic(const Duration(seconds: 30), (timer) async {
     if (service is AndroidServiceInstance) {
       service.setForegroundNotificationInfo(
@@ -165,28 +158,40 @@ void _initializeServiceAsync(ServiceInstance service) async {
 }
 
 void _startVoiceListening() {
-  // In a real implementation, you would start speech recognition here
-  // For now, we'll simulate it with a print statement
   print("🎤 Voice listening activated - Say 'Raksha' to trigger SOS");
+}
+
+Future<void> _triggerVoiceSOS(String reason) async {
+  print("🎤 VOICE SOS TRIGGERED: $reason");
+  
+  try {
+    await ApiService.triggerVoiceSos();
+    await _triggerEmergencyAlert(reason);
+  } catch (e) {
+    print("Error triggering voice SOS: $e");
+    await _triggerEmergencyAlert(reason);
+  }
+}
+
+Future<void> _triggerMotionSOS(String reason) async {
+  print("📱 MOTION SOS TRIGGERED: $reason");
+  
+  try {
+    await ApiService.triggerMotionSos();
+    await _triggerEmergencyAlert(reason);
+  } catch (e) {
+    print("Error triggering motion SOS: $e");
+    await _triggerEmergencyAlert(reason);
+  }
 }
 
 Future<void> _triggerEmergencyAlert(String reason) async {
   print("🚨 EMERGENCY ALERT TRIGGERED: $reason");
   
   try {
-    // Play alert sound
     await _playAlertSound();
-    
-    // Show emergency notification
     await _showEmergencyNotification(reason);
-    
-    // Vibrate device
     await _triggerVibration();
-    
-    // Here you would also:
-    // - Send SMS to emergency contacts
-    // - Share location
-    // - Call emergency services if configured
   } catch (e) {
     print("Error in emergency alert: $e");
   }
@@ -194,14 +199,7 @@ Future<void> _triggerEmergencyAlert(String reason) async {
 
 Future<void> _playAlertSound() async {
   try {
-    // Load and play the alert.wav file
     await SystemSound.play(SystemSoundType.alert);
-    
-    // For custom sound, you would use an audio player package
-    // Example with audioplayers package:
-    // final player = AudioPlayer();
-    // await player.play(AssetSource('alert.wav'));
-    
     print("🔊 Alert sound played");
   } catch (e) {
     print("Error playing alert sound: $e");
@@ -220,8 +218,8 @@ Future<void> _showEmergencyNotification(String reason) async {
       showWhen: true,
       enableVibration: true,
       playSound: true,
-      autoCancel: false, // Keep notification visible
-      ongoing: true, // Make it persistent
+      autoCancel: false,
+      ongoing: true,
     );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
@@ -237,7 +235,7 @@ Future<void> _showEmergencyNotification(String reason) async {
     );
 
     await flutterLocalNotificationsPlugin.show(
-      999, // Use different ID from foreground service
+      999,
       '🚨 EMERGENCY ALERT',
       'RakshaNet: $reason - Emergency services notified',
       platformChannelSpecifics,
@@ -250,7 +248,6 @@ Future<void> _showEmergencyNotification(String reason) async {
 Future<void> _triggerVibration() async {
   try {
     await HapticFeedback.heavyImpact();
-    // Add a delay and vibrate again for emphasis
     await Future.delayed(const Duration(milliseconds: 500));
     await HapticFeedback.heavyImpact();
   } catch (e) {
@@ -258,13 +255,11 @@ Future<void> _triggerVibration() async {
   }
 }
 
-// Helper function to check if service is running
 Future<bool> isBackgroundServiceRunning() async {
   final service = FlutterBackgroundService();
   return await service.isRunning();
 }
 
-// Helper function to trigger SOS from UI
 Future<void> triggerSOSFromUI() async {
   final service = FlutterBackgroundService();
   if (await service.isRunning()) {
@@ -272,7 +267,6 @@ Future<void> triggerSOSFromUI() async {
   }
 }
 
-// Helper function to simulate voice detection (for testing)
 Future<void> simulateVoiceDetection(String word) async {
   final service = FlutterBackgroundService();
   if (await service.isRunning()) {
@@ -280,7 +274,6 @@ Future<void> simulateVoiceDetection(String word) async {
   }
 }
 
-// Helper function to properly stop the service
 Future<void> stopBackgroundService() async {
   final service = FlutterBackgroundService();
   if (await service.isRunning()) {

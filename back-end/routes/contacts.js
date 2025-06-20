@@ -237,4 +237,28 @@ router.delete("/:id", authMiddleware, async (req, res) => {
   }
 })
 
+// Get all emergency contacts for dashboard
+router.get("/dashboard", authMiddleware, async (req, res) => {
+  try {
+    const userId = req.user.userId
+
+    const contacts = await Contact.findAll({
+      where: { userId },
+      attributes: ["id", "name", "phone", "relationship", "isVerified", "createdAt"],
+      order: [["createdAt", "DESC"]],
+    })
+
+    res.status(200).json({
+      success: true,
+      data: { contacts },
+    })
+  } catch (error) {
+    console.error("Get dashboard contacts error:", error)
+    res.status(500).json({
+      success: false,
+      error: "Internal server error",
+    })
+  }
+})
+
 module.exports = router

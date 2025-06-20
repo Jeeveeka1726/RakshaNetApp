@@ -4,6 +4,10 @@ import 'package:permission_handler/permission_handler.dart';
 import 'background_service.dart';
 import 'nearby_stations_page.dart';
 import 'enhanced_sos_page.dart';
+import 'contacts_management_page.dart';
+import 'services/api_service.dart';
+import 'models/contact.dart';
+import 'login_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final VoidCallback toggleTheme;
@@ -20,6 +24,8 @@ class _DashboardPageState extends State<DashboardPage>
   bool _serviceRunning = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  List<Contact> _contacts = [];
+  bool _isLoadingContacts = false;
 
   @override
   void initState() {
@@ -38,6 +44,7 @@ class _DashboardPageState extends State<DashboardPage>
     
     _checkServiceStatus();
     _requestPermissions();
+    _loadContacts();
   }
 
   @override
@@ -60,15 +67,49 @@ class _DashboardPageState extends State<DashboardPage>
     });
   }
 
+  Future<void> _loadContacts() async {
+    setState(() {
+      _isLoadingContacts = true;
+    });
+
+    try {
+      final result = await ApiService.getDashboardContacts();
+      if (result['success']) {
+        setState(() {
+          _contacts = (result['data']['contacts'] as List)
+              .map((contact) => Contact.fromJson(contact))
+              .toList();
+        });
+      } else {
+        _showSnackBar(result['error'] ?? 'Failed to load contacts', Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar('Error: ${e.toString()}', Colors.red);
+    } finally {
+      setState(() {
+        _isLoadingContacts = false;
+      });
+    }
+  }
+
+  void _showSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: color,
+      ),
+    );
+  }
+
   void _activateSOS() async {
-  // Navigate to enhanced SOS page
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => EnhancedSOSPage(),
-    ),
-  );
-}
+    // Navigate to enhanced SOS page
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EnhancedSOSPage(),
+      ),
+    );
+  }
 
   void _deactivateSOS() {
     setState(() {
@@ -79,12 +120,37 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   void _testVoiceDetection() async {
-    // Simulate voice detection for testing
-    await simulateVoiceDetection("Raksha help me");
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Voice detection test triggered!'),
-        backgroundColor: Colors.orange,
+    try {
+      final result = await ApiService.triggerVoiceSos();
+      if (result['success']) {
+        _showSnackBar('Voice SOS triggered successfully!', Colors.green);
+      } else {
+        _showSnackBar(result['error'] ?? 'Failed to trigger voice SOS', Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar('Error: ${e.toString()}', Colors.red);
+    }
+  }
+
+  void _testMotionDetection() async {
+    try {
+      final result = await ApiService.triggerMotionSos();
+      if (result['success']) {
+        _showSnackBar('Motion SOS triggered successfully!', Colors.green);
+      } else {
+        _showSnackBar(result['error'] ?? 'Failed to trigger motion SOS', Colors.red);
+      }
+    } catch (e) {
+      _showSnackBar('Error: ${e.toString()}', Colors.red);
+    }
+  }
+
+  void _logout() async {
+    await ApiService.logout();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => LoginPage(toggleTheme: widget.toggleTheme),
       ),
     );
   }
@@ -129,8 +195,17 @@ class _DashboardPageState extends State<DashboardPage>
                 case 'test_voice':
                   _testVoiceDetection();
                   break;
+                case 'test_motion':
+                  _testMotionDetection();
+                  break;
                 case 'refresh_service':
                   _checkServiceStatus();
+                  break;
+                case 'refresh_contacts':
+                  _loadContacts();
+                  break;
+                case 'logout':
+                  _logout();
                   break;
               }
             },
@@ -141,7 +216,17 @@ class _DashboardPageState extends State<DashboardPage>
                   children: [
                     Icon(Icons.mic),
                     SizedBox(width: 8),
-                    Text('Test Voice Detection'),
+                    Text('Test Voice SOS'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'test_motion',
+                child: Row(
+                  children: [
+                    Icon(Icons.vibration),
+                    SizedBox(width: 8),
+                    Text('Test Motion SOS'),
                   ],
                 ),
               ),
@@ -152,6 +237,26 @@ class _DashboardPageState extends State<DashboardPage>
                     Icon(Icons.refresh),
                     SizedBox(width: 8),
                     Text('Refresh Service Status'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'refresh_contacts',
+                child: Row(
+                  children: [
+                    Icon(Icons.contacts),
+                    SizedBox(width: 8),
+                    Text('Refresh Contacts'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout),
+                    SizedBox(width: 8),
+                    Text('Logout'),
                   ],
                 ),
               ),
@@ -193,6 +298,43 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ),
               const SizedBox(height: 24),
+
+              // Emergency Contacts Summary
+              if (_contacts.isNotEmpty)
+                Card(
+                  color: Colors.green[50],
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.contacts,
+                          color: Colors.green[700],
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            '${_contacts.length} emergency contact${_contacts.length == 1 ? '' : 's'} configured',
+                            style: TextStyle(
+                              color: Colors.green[700],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ),
+                        if (_isLoadingContacts)
+                          SizedBox(
+                            width: 16,
+                            height: 16,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation(Colors.green[700]),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 16),
 
               // SOS Button
               AnimatedBuilder(
@@ -318,7 +460,12 @@ class _DashboardPageState extends State<DashboardPage>
                       icon: Icons.contacts,
                       title: 'Emergency\nContacts',
                       onTap: () {
-                        // Navigate to emergency contacts
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ContactsManagementPage(),
+                          ),
+                        ).then((_) => _loadContacts()); // Refresh contacts when returning
                       },
                     ),
                     _buildQuickActionCard(
@@ -337,14 +484,14 @@ class _DashboardPageState extends State<DashboardPage>
                       icon: Icons.local_hospital,
                       title: 'Medical\nInfo',
                       onTap: () {
-                        // Medical info functionality
+                        _showSnackBar('Medical info feature coming soon!', Colors.blue);
                       },
                     ),
                     _buildQuickActionCard(
                       icon: Icons.history,
                       title: 'Alert\nHistory',
                       onTap: () {
-                        // Alert history functionality
+                        _showSnackBar('Alert history feature coming soon!', Colors.blue);
                       },
                     ),
                   ],

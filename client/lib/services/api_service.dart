@@ -183,6 +183,24 @@ class ApiService {
       };
     }
   }
+
+  // Get dashboard contacts
+  static Future<Map<String, dynamic>> getDashboardContacts() async {
+    try {
+      final headers = await getHeaders();
+      final response = await http.get(
+        Uri.parse('$baseUrl/contacts/dashboard'),
+        headers: headers,
+      );
+      
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: ${e.toString()}',
+      };
+    }
+  }
   
   // Delete emergency contact
   static Future<Map<String, dynamic>> deleteContact(String contactId) async {
@@ -207,7 +225,7 @@ class ApiService {
     try {
       final headers = await getHeaders();
       final response = await http.post(
-        Uri.parse('https://rakshanetapp.onrender.com/send-sms'),
+        Uri.parse('$baseUrl/send-sms'),
         headers: headers,
         body: jsonEncode({'message': message}),
       );
@@ -226,7 +244,7 @@ class ApiService {
     try {
       final headers = await getHeaders();
       final response = await http.post(
-        Uri.parse('https://rakshanetapp.onrender.com/make-call'),
+        Uri.parse('$baseUrl/make-call'),
         headers: headers,
         body: jsonEncode({
           'to': to,
@@ -241,5 +259,52 @@ class ApiService {
         'error': 'Network error: ${e.toString()}',
       };
     }
+  }
+
+  // Trigger Voice SOS
+  static Future<Map<String, dynamic>> triggerVoiceSos() async {
+    try {
+      final headers = await getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/sos/voice'),
+        headers: headers,
+      );
+      
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  // Trigger Motion SOS
+  static Future<Map<String, dynamic>> triggerMotionSos() async {
+    try {
+      final headers = await getHeaders();
+      final response = await http.post(
+        Uri.parse('$baseUrl/sos/motion'),
+        headers: headers,
+      );
+      
+      return jsonDecode(response.body);
+    } catch (e) {
+      return {
+        'success': false,
+        'error': 'Network error: ${e.toString()}',
+      };
+    }
+  }
+
+  // Check authentication status
+  static Future<bool> isAuthenticated() async {
+    final token = await getToken();
+    return token != null;
+  }
+
+  // Logout
+  static Future<void> logout() async {
+    await removeToken();
   }
 }
