@@ -32,6 +32,7 @@ syncDatabase()
 // Routes
 app.use("/api/auth", authRoutes)
 app.use("/api/contacts", contactRoutes)
+app.use("/api/sos", authMiddleware, require("./routes/sos"))
 
 // 🔹 Route to send SMS (protected)
 app.post("/send-sms", authMiddleware, async (req, res) => {
