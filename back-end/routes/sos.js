@@ -1,147 +1,99 @@
-require("dotenv").config(); // Load .env variables
-
 const express = require("express");
-const cors = require("cors");
-const twilio = require("twilio");
-const fetch = require("node-fetch");
+const { Contact } = require("../models");
 const axios = require("axios");
-const { syncDatabase } = require("./models");
 
-// Import routes
-const authRoutes = require("./routes/auth");
-const contactRoutes = require("./routes/contacts");
-const authMiddleware = require("./middleware/auth");
+const router = express.Router();
 
-const app = express();
-const port = 5500;
+// ✅ Fast2SMS config
+const FAST2SMS_API_KEY = "iDJxaW8B6ze0pn2lO5NhgFufKH3TXMdytUQrsLqSmYAcCjZv1PA2fhW67eCH3y8pYZ4NIuvEsmjGQbUM";
+const FAST2SMS_API_URL = "https://www.fast2sms.com/dev/bulkV2";
 
-// 🔐 Load secrets from .env
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-const twilioNumber = process.env.TWILIO_PHONE_NUMBER;
-const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
-const fast2smsApiKey = process.env.FAST2SMS_API_KEY;
-const fast2smsRecipients = process.env.FAST2SMS_RECIPIENTS; // comma-separated mobile numbers
-
-const client = twilio(accountSid, authToken);
-
-app.use(cors());
-app.use(express.json());
-
-// Initialize database
-syncDatabase();
-
-// Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/contacts", contactRoutes);
-app.use("/api/sos", authMiddleware, require("./routes/sos"));
-
-/**
- * 🔹 Route to send SMS via Fast2SMS (protected)
- * Requires:
- * - FAST2SMS_API_KEY in .env
- * - FAST2SMS_RECIPIENTS in .env
- */
-app.post("/send-sms", authMiddleware, async (req, res) => {
-  const { message } = req.body;
-
-  if (!message) {
-    return res.status(400).json({ success: false, error: 'Missing "message" in request body.' });
-  }
-
-  const FAST2SMS_URL = "https://www.fast2sms.com/dev/bulkV2";
-  const params = {
-    authorization: fast2smsApiKey,
-    message: message,
-    language: "english",
-    route: "q", // Quick SMS route
-    numbers: fast2smsRecipients,
-  };
-
+// ✅ Updated: Shared function to send SMS using GET
+async function sendFast2SMS(phones, message) {
   try {
-    const response = await axios.get(FAST2SMS_URL, { params });
+    const response = await axios.get(FAST2SMS_API_URL, {
+      params: {
+        authorization: FAST2SMS_API_KEY,
+        message,
+        language: "english",
+        route: "q", // Use "q" for quick SMS
+        numbers: phones.join(","),
+      },
+    });
 
-    if (response.data.return) {
-      res.status(200).json({
-        success: true,
-        message: `SMS sent successfully to ${fast2smsRecipients}`,
-        response: response.data,
-      });
-    } else {
-      res.status(500).json({
+    return response.data;
+  } catch (err) {
+    console.error("❌ Fast2SMS Error:", err.response?.data || err.message);
+    throw new Error("Failed to send SMS");
+  }
+}
+
+// ✅ Voice SOS route
+router.post("/voice", async (req, res) => {
+  try {
+    const { userId, name } = req.user;
+
+    const contacts = await Contact.findAll({
+      where: { userId, isVerified: true },
+    });
+
+    if (!contacts.length) {
+      return res.status(404).json({
         success: false,
-        error: "Failed to send SMS",
-        details: response.data,
+        message: "No verified emergency contacts found",
       });
     }
-  } catch (error) {
-    console.error("Fast2SMS Error:", error.response?.data || error.message);
-    res.status(500).json({ success: false, error: "Error while sending SMS" });
-  }
-});
 
-// 🔹 Route to make a call (protected)
-app.post("/make-call", authMiddleware, async (req, res) => {
-  const { to, message } = req.body;
+    const phoneNumbers = contacts.map((contact) => contact.phone);
+    const message = `🚨 VOICE SOS ALERT! 🚨\n${name} triggered a voice alert via RakshaNet!`;
 
-  if (!message || !to) {
-    return res.status(400).json({
-      success: false,
-      error: 'Missing "message" or "to" in request body',
-    });
-  }
+    await sendFast2SMS(phoneNumbers, message);
 
-  try {
-    // Extract coordinates from Google Maps URL
-    const coordMatch = message.match(/https:\/\/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/);
-    let finalMessage = message;
-
-    if (coordMatch) {
-      const [_, lat, lng] = coordMatch;
-      const geoResponse = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=${googleApiKey}`
-      );
-      const geoData = await geoResponse.json();
-
-      const address = geoData.results[0]?.formatted_address || `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
-      finalMessage = message.replace(/https:\/\/maps\.google\.com[^\s]+/, address);
-    }
-
-    const cleanMessage = finalMessage
-      .replace(/[&<>]/g, " ")
-      .replace(/\n/g, ". ")
-      .replace(/🚨/g, "SOS Alert: ")
-      .trim();
-
-    const twiml = `
-      <Response>
-        <Say voice="alice" language="en-IN">
-          ${cleanMessage}
-        </Say>
-      </Response>
-    `;
-
-    const call = await client.calls.create({
-      url: `http://twimlets.com/echo?Twiml=${encodeURIComponent(twiml)}`,
-      to: to,
-      from: twilioNumber,
-    });
-
-    res.status(200).json({
+    res.json({
       success: true,
-      message: `Call initiated successfully to ${to}`,
-      callSid: call.sid,
+      message: `Voice SOS alert sent to ${phoneNumbers.length} emergency contacts`,
+      contactsNotified: phoneNumbers.length,
     });
-  } catch (error) {
-    console.error("Error making call:", error);
+  } catch (err) {
     res.status(500).json({
       success: false,
-      error: error.message,
-      details: error.stack,
+      error: err.message,
     });
   }
 });
 
-app.listen(port, () => {
-  console.log(`🚀 Server running on http://localhost:${port}`);
+// ✅ Motion SOS route
+router.post("/motion", async (req, res) => {
+  try {
+    const { userId, name } = req.user;
+
+    const contacts = await Contact.findAll({
+      where: { userId, isVerified: true },
+    });
+
+    if (!contacts.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No verified emergency contacts found",
+      });
+    }
+
+    const phoneNumbers = contacts.map((contact) => contact.phone);
+    const message = `🚨 MOTION SOS ALERT! 🚨\n${name} triggered a motion alert via RakshaNet!`;
+
+    await sendFast2SMS(phoneNumbers, message);
+
+    res.json({
+      success: true,
+      message: `Motion SOS alert sent to ${phoneNumbers.length} emergency contacts`,
+      contactsNotified: phoneNumbers.length,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+    });
+  }
 });
+
+module.exports = router;
