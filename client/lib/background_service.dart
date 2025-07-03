@@ -32,6 +32,10 @@ Future<void> initializeService() async {
       initialNotificationTitle: 'RakshaNet Safety Mode',
       initialNotificationContent: 'Monitoring for emergencies...',
       foregroundServiceNotificationId: 888,
+      foregroundServiceTypes: [
+        AndroidForegroundType.dataSync,
+        AndroidForegroundType.location,
+      ],
     ),
     iosConfiguration: IosConfiguration(
       onForeground: onStart,
@@ -39,7 +43,13 @@ Future<void> initializeService() async {
     ),
   );
 
-  await service.startService();
+  // Start service only if permissions are granted
+  try {
+    await service.startService();
+    print('Background service started successfully');
+  } catch (e) {
+    print('Failed to start background service: $e');
+  }
 }
 
 Future<void> _initializeNotifications() async {
@@ -48,10 +58,10 @@ Future<void> _initializeNotifications() async {
 
   const DarwinInitializationSettings initializationSettingsIOS =
       DarwinInitializationSettings(
-    requestAlertPermission: true,
-    requestBadgePermission: true,
-    requestSoundPermission: true,
-  );
+        requestAlertPermission: true,
+        requestBadgePermission: true,
+        requestSoundPermission: true,
+      );
 
   const InitializationSettings initializationSettings = InitializationSettings(
     android: initializationSettingsAndroid,
@@ -88,36 +98,39 @@ void _initializeServiceAsync(ServiceInstance service) async {
   Timer? voiceTimer;
 
   StreamSubscription? accelerometerSubscription;
-  
+
   try {
-    accelerometerSubscription = accelerometerEvents.listen((event) async {
-      final now = DateTime.now();
-      if (lastEvent != null) {
-        double delta = sqrt(
-          pow(event.x - lastEvent!.x, 2) +
-          pow(event.y - lastEvent!.y, 2) +
-          pow(event.z - lastEvent!.z, 2),
-        );
+    accelerometerSubscription = accelerometerEvents.listen(
+      (event) async {
+        final now = DateTime.now();
+        if (lastEvent != null) {
+          double delta = sqrt(
+            pow(event.x - lastEvent!.x, 2) +
+                pow(event.y - lastEvent!.y, 2) +
+                pow(event.z - lastEvent!.z, 2),
+          );
 
-        if (delta > 15 && now.difference(lastTriggered).inSeconds > 5) {
-          lastTriggered = now;
-          await _triggerMotionSOS("Shake detected");
+          if (delta > 15 && now.difference(lastTriggered).inSeconds > 5) {
+            lastTriggered = now;
+            await _triggerMotionSOS("Shake detected");
 
-          if (!isListeningForVoice) {
-            _startVoiceListening();
-            isListeningForVoice = true;
+            if (!isListeningForVoice) {
+              _startVoiceListening();
+              isListeningForVoice = true;
 
-            voiceTimer?.cancel();
-            voiceTimer = Timer(const Duration(seconds: 10), () {
-              isListeningForVoice = false;
-            });
+              voiceTimer?.cancel();
+              voiceTimer = Timer(const Duration(seconds: 10), () {
+                isListeningForVoice = false;
+              });
+            }
           }
         }
-      }
-      lastEvent = event;
-    }, onError: (error) {
-      print("Accelerometer error: $error");
-    });
+        lastEvent = event;
+      },
+      onError: (error) {
+        print("Accelerometer error: $error");
+      },
+    );
   } catch (e) {
     print("Error setting up accelerometer: $e");
   }
@@ -143,17 +156,15 @@ void _initializeServiceAsync(ServiceInstance service) async {
     if (service is AndroidServiceInstance) {
       service.setForegroundNotificationInfo(
         title: "RakshaNet Safety Mode",
-        content: "Active - Last check: ${DateTime.now().toString().substring(11, 19)}",
+        content:
+            "Active - Last check: ${DateTime.now().toString().substring(11, 19)}",
       );
     }
-    
-    service.invoke(
-      'update',
-      {
-        "current_date": DateTime.now().toIso8601String(),
-        "status": "monitoring",
-      },
-    );
+
+    service.invoke('update', {
+      "current_date": DateTime.now().toIso8601String(),
+      "status": "monitoring",
+    });
   });
 }
 
@@ -163,7 +174,7 @@ void _startVoiceListening() {
 
 Future<void> _triggerVoiceSOS(String reason) async {
   print("🎤 VOICE SOS TRIGGERED: $reason");
-  
+
   try {
     await ApiService.triggerVoiceSos();
     await _triggerEmergencyAlert(reason);
@@ -175,7 +186,7 @@ Future<void> _triggerVoiceSOS(String reason) async {
 
 Future<void> _triggerMotionSOS(String reason) async {
   print("📱 MOTION SOS TRIGGERED: $reason");
-  
+
   try {
     await ApiService.triggerMotionSos();
     await _triggerEmergencyAlert(reason);
@@ -187,7 +198,7 @@ Future<void> _triggerMotionSOS(String reason) async {
 
 Future<void> _triggerEmergencyAlert(String reason) async {
   print("🚨 EMERGENCY ALERT TRIGGERED: $reason");
-  
+
   try {
     await _playAlertSound();
     await _showEmergencyNotification(reason);
@@ -210,24 +221,24 @@ Future<void> _showEmergencyNotification(String reason) async {
   try {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-      'emergency_alerts',
-      'Emergency Alerts',
-      channelDescription: 'Critical emergency notifications',
-      importance: Importance.max,
-      priority: Priority.high,
-      showWhen: true,
-      enableVibration: true,
-      playSound: true,
-      autoCancel: false,
-      ongoing: true,
-    );
+          'emergency_alerts',
+          'Emergency Alerts',
+          channelDescription: 'Critical emergency notifications',
+          importance: Importance.max,
+          priority: Priority.high,
+          showWhen: true,
+          enableVibration: true,
+          playSound: true,
+          autoCancel: false,
+          ongoing: true,
+        );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
         DarwinNotificationDetails(
-      presentAlert: true,
-      presentBadge: true,
-      presentSound: true,
-    );
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        );
 
     const NotificationDetails platformChannelSpecifics = NotificationDetails(
       android: androidPlatformChannelSpecifics,

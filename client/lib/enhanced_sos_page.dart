@@ -215,305 +215,320 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
         foregroundColor: Colors.white,
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
-          child:
-              loading
-                  ? Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(
-                        color: Color(0xFFEF4444),
-                        strokeWidth: 3,
-                      ),
-                      const SizedBox(height: 24),
-                      Text(
-                        'Sending emergency alert...',
-                        style: Theme.of(context).textTheme.titleMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Please wait while we notify your emergency contacts',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  )
-                  : Column(
-                    children: [
-                      // Location status
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color:
-                              locationLink != null
-                                  ? const Color(0xFF10B981).withOpacity(0.05)
-                                  : const Color(0xFFF59E0B).withOpacity(0.05),
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight:
+                  MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom -
+                  kToolbarHeight -
+                  48, // AppBar height + padding
+            ),
+            child:
+                loading
+                    ? Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const CircularProgressIndicator(
+                          color: Color(0xFFEF4444),
+                          strokeWidth: 3,
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'Sending emergency alert...',
+                          style: Theme.of(context).textTheme.titleMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Please wait while we notify your emergency contacts',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    )
+                    : Column(
+                      children: [
+                        // Location status
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
                             color:
                                 locationLink != null
-                                    ? const Color(0xFF10B981).withOpacity(0.2)
-                                    : const Color(0xFFF59E0B).withOpacity(0.2),
-                            width: 1,
+                                    ? const Color(0xFF10B981).withOpacity(0.05)
+                                    : const Color(0xFFF59E0B).withOpacity(0.05),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color:
+                                  locationLink != null
+                                      ? const Color(0xFF10B981).withOpacity(0.2)
+                                      : const Color(
+                                        0xFFF59E0B,
+                                      ).withOpacity(0.2),
+                              width: 1,
+                            ),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 48,
-                              height: 48,
-                              decoration: BoxDecoration(
-                                color: (locationLink != null
-                                        ? const Color(0xFF10B981)
-                                        : const Color(0xFFF59E0B))
-                                    .withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                locationLink != null
-                                    ? Icons.location_on
-                                    : Icons.location_searching,
-                                color:
-                                    locationLink != null
-                                        ? const Color(0xFF10B981)
-                                        : const Color(0xFFF59E0B),
-                                size: 24,
-                              ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    locationLink != null
-                                        ? 'Location Ready'
-                                        : 'Getting Location...',
-                                    style: TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color:
-                                          locationLink != null
-                                              ? const Color(0xFF10B981)
-                                              : const Color(0xFFF59E0B),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    locationLink != null
-                                        ? 'Your location will be shared with emergency contacts'
-                                        : 'Please wait while we get your current location',
-                                    style:
-                                        Theme.of(context).textTheme.bodySmall,
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      const Spacer(),
-
-                      // SOS Button
-                      AnimatedBuilder(
-                        animation: _pulseAnimation,
-                        builder: (context, child) {
-                          return Transform.scale(
-                            scale: modalVisible ? _pulseAnimation.value : 1.0,
-                            child: GestureDetector(
-                              onTap:
-                                  locationLink != null ? _startCountdown : null,
-                              child: Container(
-                                width: 200,
-                                height: 200,
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 48,
+                                height: 48,
                                 decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
+                                  color: (locationLink != null
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFF59E0B))
+                                      .withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  locationLink != null
+                                      ? Icons.location_on
+                                      : Icons.location_searching,
                                   color:
                                       locationLink != null
-                                          ? const Color(0xFFEF4444)
-                                          : Colors.grey[400],
-                                  border: Border.all(
-                                    color: (locationLink != null
-                                            ? const Color(0xFFEF4444)
-                                            : Colors.grey[400]!)
-                                        .withOpacity(0.3),
-                                    width: 6,
-                                  ),
+                                          ? const Color(0xFF10B981)
+                                          : const Color(0xFFF59E0B),
+                                  size: 24,
                                 ),
+                              ),
+                              const SizedBox(width: 16),
+                              Expanded(
                                 child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Icon(
-                                      Icons.warning_rounded,
-                                      size: 56,
-                                      color: Colors.white,
-                                    ),
-                                    const SizedBox(height: 12),
-                                    const Text(
-                                      'SOS',
+                                    Text(
+                                      locationLink != null
+                                          ? 'Location Ready'
+                                          : 'Getting Location...',
                                       style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 32,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 4,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                        color:
+                                            locationLink != null
+                                                ? const Color(0xFF10B981)
+                                                : const Color(0xFFF59E0B),
                                       ),
                                     ),
-                                    if (modalVisible)
-                                      Text(
-                                        '$countdown',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 24,
-                                          fontWeight: FontWeight.w700,
-                                        ),
-                                      ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      locationLink != null
+                                          ? 'Your location will be shared with emergency contacts'
+                                          : 'Please wait while we get your current location',
+                                      style:
+                                          Theme.of(context).textTheme.bodySmall,
+                                    ),
                                   ],
                                 ),
                               ),
-                            ),
-                          );
-                        },
-                      ),
-
-                      const Spacer(),
-
-                      // Instructions
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(20),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: Theme.of(context).dividerColor,
-                            width: 1,
+                            ],
                           ),
                         ),
-                        child: Column(
-                          children: [
-                            const Icon(
-                              Icons.info_outline,
-                              color: Color(0xFF2563EB),
-                              size: 24,
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              'How to Use',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w600,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).textTheme.titleMedium?.color,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Tap and hold the SOS button to activate emergency mode. You\'ll have 10 seconds to choose how to alert your contacts.',
-                              textAlign: TextAlign.center,
-                              style: Theme.of(context).textTheme.bodyMedium,
-                            ),
-                          ],
-                        ),
-                      ),
 
-                      // Method selection modal
-                      if (modalVisible)
+                        const SizedBox(height: 40),
+
+                        // SOS Button
+                        AnimatedBuilder(
+                          animation: _pulseAnimation,
+                          builder: (context, child) {
+                            return Transform.scale(
+                              scale: modalVisible ? _pulseAnimation.value : 1.0,
+                              child: GestureDetector(
+                                onTap:
+                                    locationLink != null
+                                        ? _startCountdown
+                                        : null,
+                                child: Container(
+                                  width: 200,
+                                  height: 200,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color:
+                                        locationLink != null
+                                            ? const Color(0xFFEF4444)
+                                            : Colors.grey[400],
+                                    border: Border.all(
+                                      color: (locationLink != null
+                                              ? const Color(0xFFEF4444)
+                                              : Colors.grey[400]!)
+                                          .withOpacity(0.3),
+                                      width: 6,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.warning_rounded,
+                                        size: 56,
+                                        color: Colors.white,
+                                      ),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        'SOS',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 32,
+                                          fontWeight: FontWeight.w700,
+                                          letterSpacing: 4,
+                                        ),
+                                      ),
+                                      if (modalVisible)
+                                        Text(
+                                          '$countdown',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 40),
+
+                        // Instructions
                         Container(
-                          margin: const EdgeInsets.only(top: 24),
-                          padding: const EdgeInsets.all(24),
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
                             color: Theme.of(context).cardColor,
-                            borderRadius: BorderRadius.circular(20),
+                            borderRadius: BorderRadius.circular(16),
                             border: Border.all(
                               color: Theme.of(context).dividerColor,
                               width: 1,
                             ),
                           ),
                           child: Column(
-                            mainAxisSize: MainAxisSize.min,
                             children: [
+                              const Icon(
+                                Icons.info_outline,
+                                color: Color(0xFF2563EB),
+                                size: 24,
+                              ),
+                              const SizedBox(height: 12),
                               Text(
-                                'Choose Alert Method',
-                                style: Theme.of(context).textTheme.titleLarge,
+                                'How to Use',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w600,
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).textTheme.titleMedium?.color,
+                                ),
                               ),
                               const SizedBox(height: 8),
                               Text(
-                                'Sending alert in $countdown seconds',
-                                style: const TextStyle(
-                                  color: Color(0xFFEF4444),
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF3B82F6,
-                                        ),
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                      ),
-                                      icon: const Icon(Icons.sms_outlined),
-                                      label: const Text('Send SMS'),
-                                      onPressed: () {
-                                        timer?.cancel();
-                                        _pulseController.stop();
-                                        setState(() => modalVisible = false);
-                                        _triggerAction('SMS');
-                                      },
-                                    ),
-                                  ),
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: ElevatedButton.icon(
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: const Color(
-                                          0xFF10B981,
-                                        ),
-                                        foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
-                                        ),
-                                      ),
-                                      icon: const Icon(Icons.call_outlined),
-                                      label: const Text('Make Call'),
-                                      onPressed: () {
-                                        timer?.cancel();
-                                        _pulseController.stop();
-                                        setState(() => modalVisible = false);
-                                        _triggerAction('Call');
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 16),
-                              TextButton(
-                                onPressed: _cancelCountdown,
-                                child: const Text(
-                                  'Cancel',
-                                  style: TextStyle(
-                                    color: Color(0xFFEF4444),
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
+                                'Tap the SOS button to activate emergency mode. You\'ll have 10 seconds to choose how to alert your contacts.',
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context).textTheme.bodyMedium,
                               ),
                             ],
                           ),
                         ),
-                    ],
-                  ),
+
+                        // Method selection modal
+                        if (modalVisible) ...[
+                          const SizedBox(height: 24),
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).cardColor,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(
+                                color: Theme.of(context).dividerColor,
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Choose Alert Method',
+                                  style: Theme.of(context).textTheme.titleLarge,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Sending alert in $countdown seconds',
+                                  style: const TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF3B82F6,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                        ),
+                                        icon: const Icon(Icons.sms_outlined),
+                                        label: const Text('Send SMS'),
+                                        onPressed: () {
+                                          timer?.cancel();
+                                          _pulseController.stop();
+                                          setState(() => modalVisible = false);
+                                          _triggerAction('SMS');
+                                        },
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: ElevatedButton.icon(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: const Color(
+                                            0xFF10B981,
+                                          ),
+                                          foregroundColor: Colors.white,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 16,
+                                          ),
+                                        ),
+                                        icon: const Icon(Icons.call_outlined),
+                                        label: const Text('Make Call'),
+                                        onPressed: () {
+                                          timer?.cancel();
+                                          _pulseController.stop();
+                                          setState(() => modalVisible = false);
+                                          _triggerAction('Call');
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 16),
+                                TextButton(
+                                  onPressed: _cancelCountdown,
+                                  child: const Text(
+                                    'Cancel',
+                                    style: TextStyle(
+                                      color: Color(0xFFEF4444),
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+          ),
         ),
       ),
     );

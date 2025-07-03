@@ -35,7 +35,8 @@ class _NearbyStationsPageState extends State<NearbyStationsPage> {
       if (permission == LocationPermission.deniedForever ||
           permission == LocationPermission.denied) {
         setState(() {
-          errorMsg = "Location permission denied. Please enable location access.";
+          errorMsg =
+              "Location permission denied. Please enable location access.";
           isLoading = false;
         });
         return;
@@ -53,7 +54,7 @@ class _NearbyStationsPageState extends State<NearbyStationsPage> {
       );
 
       final response = await http.get(url);
-      
+
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         setState(() {
@@ -65,7 +66,8 @@ class _NearbyStationsPageState extends State<NearbyStationsPage> {
       }
     } catch (e) {
       setState(() {
-        errorMsg = "Failed to fetch police stations. Please check your internet connection.";
+        errorMsg =
+            "Failed to fetch police stations. Please check your internet connection.";
         isLoading = false;
       });
     }
@@ -74,7 +76,7 @@ class _NearbyStationsPageState extends State<NearbyStationsPage> {
   void openInMaps(double lat, double lng) async {
     final url = 'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng';
     final uri = Uri.parse(url);
-    
+
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     } else {
@@ -92,148 +94,174 @@ class _NearbyStationsPageState extends State<NearbyStationsPage> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        height: MediaQuery.of(context).size.height * 0.8,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        child: Column(
-          children: [
-            // Handle bar
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(2),
-              ),
+      builder:
+          (context) => Container(
+            height: MediaQuery.of(context).size.height * 0.8,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
             ),
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Icon(Icons.local_police, color: Theme.of(context).primaryColor),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Nearby Police Stations',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                    ),
+            child: Column(
+              children: [
+                // Handle bar
+                Container(
+                  margin: const EdgeInsets.only(top: 8),
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[300],
+                    borderRadius: BorderRadius.circular(2),
                   ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.refresh),
-                    onPressed: getNearbyStations,
-                  ),
-                ],
-              ),
-            ),
-            const Divider(height: 1),
-            // Content
-            Expanded(
-              child: isLoading
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(color: Colors.red),
-                          SizedBox(height: 16),
-                          Text('Finding nearby police stations...'),
-                        ],
+                ),
+                // Header
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.local_police,
+                        color: Theme.of(context).primaryColor,
                       ),
-                    )
-                  : errorMsg != null
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.error_outline,
-                                size: 64,
-                                color: Colors.red[300],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                errorMsg!,
-                                style: const TextStyle(color: Colors.red),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 16),
-                              ElevatedButton(
-                                onPressed: getNearbyStations,
-                                child: const Text('Retry'),
-                              ),
-                            ],
-                          ),
-                        )
-                      : stations.isEmpty
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Nearby Police Stations',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.refresh),
+                        onPressed: getNearbyStations,
+                      ),
+                    ],
+                  ),
+                ),
+                const Divider(height: 1),
+                // Content
+                Expanded(
+                  child:
+                      isLoading
                           ? const Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.search_off,
-                                    size: 64,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: 16),
-                                  Text(
-                                    'No police stations found nearby',
-                                    style: TextStyle(color: Colors.grey),
-                                  ),
-                                ],
-                              ),
-                            )
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(color: Colors.red),
+                                SizedBox(height: 16),
+                                Text('Finding nearby police stations...'),
+                              ],
+                            ),
+                          )
+                          : errorMsg != null
+                          ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.error_outline,
+                                  size: 64,
+                                  color: Colors.red[300],
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  errorMsg!,
+                                  style: const TextStyle(color: Colors.red),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 16),
+                                ElevatedButton(
+                                  onPressed: getNearbyStations,
+                                  child: const Text('Retry'),
+                                ),
+                              ],
+                            ),
+                          )
+                          : stations.isEmpty
+                          ? const Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off,
+                                  size: 64,
+                                  color: Colors.grey,
+                                ),
+                                SizedBox(height: 16),
+                                Text(
+                                  'No police stations found nearby',
+                                  style: TextStyle(color: Colors.grey),
+                                ),
+                              ],
+                            ),
+                          )
                           : ListView.builder(
-                              padding: const EdgeInsets.all(16),
-                              itemCount: stations.length,
-                              itemBuilder: (context, index) {
-                                final station = stations[index];
-                                final distance = currentPosition != null
-                                    ? Geolocator.distanceBetween(
-                                          currentPosition!.latitude,
-                                          currentPosition!.longitude,
-                                          station['geometry']['location']['lat'],
-                                          station['geometry']['location']['lng'],
-                                        ) / 1000
-                                    : 0.0;
+                            padding: const EdgeInsets.all(16),
+                            itemCount: stations.length,
+                            itemBuilder: (context, index) {
+                              final station = stations[index];
+                              final distance =
+                                  currentPosition != null
+                                      ? Geolocator.distanceBetween(
+                                            currentPosition!.latitude,
+                                            currentPosition!.longitude,
+                                            station['geometry']['location']['lat'],
+                                            station['geometry']['location']['lng'],
+                                          ) /
+                                          1000
+                                      : 0.0;
 
-                                return Card(
-                                  margin: const EdgeInsets.only(bottom: 12),
-                                  child: ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: Colors.blue[100],
-                                      child: Icon(
-                                        Icons.local_police,
-                                        color: Colors.blue[700],
-                                      ),
+                              return Card(
+                                margin: const EdgeInsets.only(bottom: 12),
+                                child: ListTile(
+                                  leading: CircleAvatar(
+                                    backgroundColor: Colors.blue[100],
+                                    child: Icon(
+                                      Icons.local_police,
+                                      color: Colors.blue[700],
                                     ),
-                                    title: Text(
-                                      station['name'] ?? 'Police Station',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  ),
+                                  title: Text(
+                                    station['name'] ?? 'Police Station',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
                                     ),
-                                    subtitle: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        if (station['vicinity'] != null)
-                                          Text(station['vicinity']),
-                                        const SizedBox(height: 4),
+                                  ),
+                                  subtitle: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      if (station['vicinity'] != null)
+                                        Text(station['vicinity']),
+                                      const SizedBox(height: 4),
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.location_on,
+                                            size: 16,
+                                            color: Colors.grey[600],
+                                          ),
+                                          const SizedBox(width: 4),
+                                          Text(
+                                            '${distance.toStringAsFixed(1)} km away',
+                                            style: TextStyle(
+                                              color: Colors.grey[600],
+                                              fontSize: 12,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      if (station['rating'] != null)
                                         Row(
                                           children: [
                                             Icon(
-                                              Icons.location_on,
+                                              Icons.star,
                                               size: 16,
-                                              color: Colors.grey[600],
+                                              color: Colors.amber[600],
                                             ),
                                             const SizedBox(width: 4),
                                             Text(
-                                              '${distance.toStringAsFixed(1)} km away',
+                                              station['rating'].toString(),
                                               style: TextStyle(
                                                 color: Colors.grey[600],
                                                 fontSize: 12,
@@ -241,45 +269,28 @@ class _NearbyStationsPageState extends State<NearbyStationsPage> {
                                             ),
                                           ],
                                         ),
-                                        if (station['rating'] != null)
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.star,
-                                                size: 16,
-                                                color: Colors.amber[600],
-                                              ),
-                                              const SizedBox(width: 4),
-                                              Text(
-                                                station['rating'].toString(),
-                                                style: TextStyle(
-                                                  color: Colors.grey[600],
-                                                  fontSize: 12,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                      ],
-                                    ),
-                                    trailing: IconButton(
-                                      icon: const Icon(
-                                        Icons.navigation,
-                                        color: Colors.red,
-                                      ),
-                                      onPressed: () => openInMaps(
-                                        station['geometry']['location']['lat'],
-                                        station['geometry']['location']['lng'],
-                                      ),
-                                    ),
-                                    isThreeLine: true,
+                                    ],
                                   ),
-                                );
-                              },
-                            ),
+                                  trailing: IconButton(
+                                    icon: const Icon(
+                                      Icons.navigation,
+                                      color: Colors.red,
+                                    ),
+                                    onPressed:
+                                        () => openInMaps(
+                                          station['geometry']['location']['lat'],
+                                          station['geometry']['location']['lng'],
+                                        ),
+                                  ),
+                                  isThreeLine: true,
+                                ),
+                              );
+                            },
+                          ),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
+          ),
     );
   }
 
@@ -300,10 +311,7 @@ class _NearbyStationsPageState extends State<NearbyStationsPage> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.red[50]!,
-              Colors.white,
-            ],
+            colors: [Colors.red[50]!, Colors.white],
           ),
         ),
         child: Center(
@@ -321,17 +329,14 @@ class _NearbyStationsPageState extends State<NearbyStationsPage> {
                 Text(
                   'Find Nearby Police Stations',
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
+                    fontWeight: FontWeight.bold,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 16),
                 Text(
                   'Locate the nearest police stations in your area for immediate assistance',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 16,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 16),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 32),
