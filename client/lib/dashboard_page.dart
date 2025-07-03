@@ -34,14 +34,10 @@ class _DashboardPageState extends State<DashboardPage>
       duration: const Duration(seconds: 1),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+
     _checkServiceStatus();
     _requestPermissions();
     _loadContacts();
@@ -76,9 +72,10 @@ class _DashboardPageState extends State<DashboardPage>
       final result = await ApiService.getDashboardContacts();
       if (result['success']) {
         setState(() {
-          _contacts = (result['data']['contacts'] as List)
-              .map((contact) => Contact.fromJson(contact))
-              .toList();
+          _contacts =
+              (result['data']['contacts'] as List)
+                  .map((contact) => Contact.fromJson(contact))
+                  .toList();
         });
       } else {
         _showSnackBar(result['error'] ?? 'Failed to load contacts', Colors.red);
@@ -93,21 +90,15 @@ class _DashboardPageState extends State<DashboardPage>
   }
 
   void _showSnackBar(String message, Color color) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: color,
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message), backgroundColor: color));
   }
 
   void _activateSOS() async {
-    // Navigate to enhanced SOS page
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (context) => EnhancedSOSPage(),
-      ),
+      MaterialPageRoute(builder: (context) => EnhancedSOSPage()),
     );
   }
 
@@ -125,7 +116,10 @@ class _DashboardPageState extends State<DashboardPage>
       if (result['success']) {
         _showSnackBar('Voice SOS triggered successfully!', Colors.green);
       } else {
-        _showSnackBar(result['error'] ?? 'Failed to trigger voice SOS', Colors.red);
+        _showSnackBar(
+          result['error'] ?? 'Failed to trigger voice SOS',
+          Colors.red,
+        );
       }
     } catch (e) {
       _showSnackBar('Error: ${e.toString()}', Colors.red);
@@ -138,7 +132,10 @@ class _DashboardPageState extends State<DashboardPage>
       if (result['success']) {
         _showSnackBar('Motion SOS triggered successfully!', Colors.green);
       } else {
-        _showSnackBar(result['error'] ?? 'Failed to trigger motion SOS', Colors.red);
+        _showSnackBar(
+          result['error'] ?? 'Failed to trigger motion SOS',
+          Colors.red,
+        );
       }
     } catch (e) {
       _showSnackBar('Error: ${e.toString()}', Colors.red);
@@ -155,31 +152,100 @@ class _DashboardPageState extends State<DashboardPage>
     );
   }
 
+  Widget _buildModernActionCard({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Theme.of(context).cardColor,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Theme.of(context).dividerColor, width: 1),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, size: 24, color: color),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Theme.of(context).textTheme.titleMedium?.color,
+                height: 1.2,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
+
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('RakshaNet'),
         automaticallyImplyLeading: false,
         actions: [
-          // Service status indicator
           Container(
-            margin: const EdgeInsets.only(right: 8),
+            margin: const EdgeInsets.only(right: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color:
+                  _serviceRunning
+                      ? const Color(0xFF10B981).withOpacity(0.1)
+                      : const Color(0xFFF59E0B).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color:
+                    _serviceRunning
+                        ? const Color(0xFF10B981)
+                        : const Color(0xFFF59E0B),
+                width: 1,
+              ),
+            ),
             child: Row(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  _serviceRunning ? Icons.security : Icons.security_outlined,
-                  color: _serviceRunning ? Colors.green : Colors.orange,
-                  size: 20,
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color:
+                        _serviceRunning
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFF59E0B),
+                    shape: BoxShape.circle,
+                  ),
                 ),
-                const SizedBox(width: 4),
+                const SizedBox(width: 6),
                 Text(
                   _serviceRunning ? 'Protected' : 'Offline',
                   style: TextStyle(
                     fontSize: 12,
-                    color: _serviceRunning ? Colors.green : Colors.orange,
+                    fontWeight: FontWeight.w500,
+                    color:
+                        _serviceRunning
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFFF59E0B),
                   ),
                 ),
               ],
@@ -209,327 +275,392 @@ class _DashboardPageState extends State<DashboardPage>
                   break;
               }
             },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'test_voice',
-                child: Row(
-                  children: [
-                    Icon(Icons.mic),
-                    SizedBox(width: 8),
-                    Text('Test Voice SOS'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'test_motion',
-                child: Row(
-                  children: [
-                    Icon(Icons.vibration),
-                    SizedBox(width: 8),
-                    Text('Test Motion SOS'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'refresh_service',
-                child: Row(
-                  children: [
-                    Icon(Icons.refresh),
-                    SizedBox(width: 8),
-                    Text('Refresh Service Status'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'refresh_contacts',
-                child: Row(
-                  children: [
-                    Icon(Icons.contacts),
-                    SizedBox(width: 8),
-                    Text('Refresh Contacts'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout),
-                    SizedBox(width: 8),
-                    Text('Logout'),
-                  ],
-                ),
-              ),
-            ],
+            itemBuilder:
+                (context) => [
+                  const PopupMenuItem(
+                    value: 'test_voice',
+                    child: Row(
+                      children: [
+                        Icon(Icons.mic),
+                        SizedBox(width: 12),
+                        Text('Test Voice SOS'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'test_motion',
+                    child: Row(
+                      children: [
+                        Icon(Icons.vibration),
+                        SizedBox(width: 12),
+                        Text('Test Motion SOS'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'refresh_service',
+                    child: Row(
+                      children: [
+                        Icon(Icons.refresh),
+                        SizedBox(width: 12),
+                        Text('Refresh Service'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'refresh_contacts',
+                    child: Row(
+                      children: [
+                        Icon(Icons.contacts),
+                        SizedBox(width: 12),
+                        Text('Refresh Contacts'),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'logout',
+                    child: Row(
+                      children: [
+                        Icon(Icons.logout),
+                        SizedBox(width: 12),
+                        Text('Logout'),
+                      ],
+                    ),
+                  ),
+                ],
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(20.0),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header Card
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    children: [
-                      Icon(
-                        Icons.security,
-                        size: 48,
-                        color: Theme.of(context).primaryColor,
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Stay Safe with RakshaNet',
-                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                              fontWeight: FontWeight.bold,
-                            ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Your safety is our priority. Use the SOS button below in case of emergency.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.grey[600]),
-                      ),
-                    ],
+              // Welcome Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(24.0),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).cardColor,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: Theme.of(context).dividerColor,
+                    width: 1,
                   ),
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.security,
+                        size: 32,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Stay Safe with RakshaNet',
+                      style: Theme.of(context).textTheme.titleLarge,
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your safety is our priority. Use the SOS button below in case of emergency.',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
 
-              // Emergency Contacts Summary
-              if (_contacts.isNotEmpty)
-                Card(
-                  color: Colors.green[50],
-                  child: Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.contacts,
-                          color: Colors.green[700],
+              // Status Cards Row
+              Row(
+                children: [
+                  // Emergency Contacts Card
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF10B981).withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: const Color(0xFF10B981).withOpacity(0.2),
+                          width: 1,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            '${_contacts.length} emergency contact${_contacts.length == 1 ? '' : 's'} configured',
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.contacts,
+                                color: Color(0xFF10B981),
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              if (_isLoadingContacts)
+                                const SizedBox(
+                                  width: 12,
+                                  height: 12,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation(
+                                      Color(0xFF10B981),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '${_contacts.length}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF10B981),
+                            ),
+                          ),
+                          Text(
+                            'Emergency Contacts',
                             style: TextStyle(
-                              color: Colors.green[700],
+                              fontSize: 12,
+                              color: Colors.grey[600],
                               fontWeight: FontWeight.w500,
                             ),
                           ),
-                        ),
-                        if (_isLoadingContacts)
-                          SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Colors.green[700]),
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
-                ),
-              const SizedBox(height: 16),
+                  const SizedBox(width: 12),
+                  // Service Status Card
+                  Expanded(
+                    child: Container(
+                      padding: const EdgeInsets.all(16.0),
+                      decoration: BoxDecoration(
+                        color: (_serviceRunning
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFFF59E0B))
+                            .withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: (_serviceRunning
+                                  ? const Color(0xFF10B981)
+                                  : const Color(0xFFF59E0B))
+                              .withOpacity(0.2),
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            _serviceRunning
+                                ? Icons.shield
+                                : Icons.shield_outlined,
+                            color:
+                                _serviceRunning
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFFF59E0B),
+                            size: 20,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _serviceRunning ? 'Active' : 'Inactive',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color:
+                                  _serviceRunning
+                                      ? const Color(0xFF10B981)
+                                      : const Color(0xFFF59E0B),
+                            ),
+                          ),
+                          Text(
+                            'Background Monitor',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 32),
 
               // SOS Button
-              AnimatedBuilder(
-                animation: _pulseAnimation,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _sosActivated ? _pulseAnimation.value : 1.0,
-                    child: GestureDetector(
-                      onTap: _sosActivated ? null : _activateSOS,
-                      child: Container(
-                        width: 200,
-                        height: 200,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: _sosActivated ? Colors.red[700] : Colors.red,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.red.withOpacity(0.3),
-                              blurRadius: 20,
-                              spreadRadius: 5,
+              Center(
+                child: AnimatedBuilder(
+                  animation: _pulseAnimation,
+                  builder: (context, child) {
+                    return Transform.scale(
+                      scale: _sosActivated ? _pulseAnimation.value : 1.0,
+                      child: GestureDetector(
+                        onTap: _sosActivated ? null : _activateSOS,
+                        child: Container(
+                          width: 180,
+                          height: 180,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: const Color(0xFFEF4444),
+                            border: Border.all(
+                              color: const Color(0xFFEF4444).withOpacity(0.3),
+                              width: 4,
                             ),
-                          ],
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              Icons.warning,
-                              size: 60,
-                              color: Colors.white,
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'SOS',
-                              style: TextStyle(
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Icon(
+                                Icons.warning_rounded,
+                                size: 48,
                                 color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
                               ),
-                            ),
-                            if (_sosActivated)
-                              Text(
-                                'ACTIVATED',
+                              const SizedBox(height: 8),
+                              const Text(
+                                'SOS',
                                 style: TextStyle(
                                   color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
+                                  fontSize: 28,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 2,
                                 ),
                               ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Info Cards
-              Card(
-                color: Colors.blue[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info,
-                        color: Colors.blue[700],
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Shake your phone or shout "Raksha" to auto-activate SOS',
-                          style: TextStyle(
-                            color: Colors.blue[700],
-                            fontWeight: FontWeight.w500,
+                              if (_sosActivated)
+                                const Text(
+                                  'ACTIVATED',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1,
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
               ),
-              const SizedBox(height: 8),
-              
-              // Service Status Card
-              Card(
-                color: _serviceRunning ? Colors.green[50] : Colors.orange[50],
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Row(
-                    children: [
-                      Icon(
-                        _serviceRunning ? Icons.check_circle : Icons.warning,
-                        color: _serviceRunning ? Colors.green[700] : Colors.orange[700],
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _serviceRunning 
-                            ? 'Background monitoring is active'
-                            : 'Background monitoring is offline',
-                          style: TextStyle(
-                            color: _serviceRunning ? Colors.green[700] : Colors.orange[700],
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    ],
+              const SizedBox(height: 32),
+
+              // Info Section
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20.0),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2563EB).withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF2563EB).withOpacity(0.2),
+                    width: 1,
                   ),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      color: Color(0xFF2563EB),
+                      size: 24,
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'Emergency Activation',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2563EB),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Shake your phone vigorously or shout "Raksha" to automatically activate SOS',
+                      textAlign: TextAlign.center,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
 
               // Quick Actions
-              Expanded(
-                child: GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  children: [
-                    _buildQuickActionCard(
-                      icon: Icons.contacts,
-                      title: 'Emergency\nContacts',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ContactsManagementPage(),
-                          ),
-                        ).then((_) => _loadContacts()); // Refresh contacts when returning
-                      },
-                    ),
-                    _buildQuickActionCard(
-                      icon: Icons.local_police,
-                      title: 'Nearby\nPolice',
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => NearbyStationsPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildQuickActionCard(
-                      icon: Icons.local_hospital,
-                      title: 'Medical\nInfo',
-                      onTap: () {
-                        _showSnackBar('Medical info feature coming soon!', Colors.blue);
-                      },
-                    ),
-                    _buildQuickActionCard(
-                      icon: Icons.history,
-                      title: 'Alert\nHistory',
-                      onTap: () {
-                        _showSnackBar('Alert history feature coming soon!', Colors.blue);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String title,
-    required VoidCallback onTap,
-  }) {
-    return Card(
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 40,
-                color: Theme.of(context).primaryColor,
-              ),
-              const SizedBox(height: 8),
               Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
+                'Quick Actions',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              const SizedBox(height: 16),
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+                childAspectRatio: 1.1,
+                children: [
+                  _buildModernActionCard(
+                    icon: Icons.contacts_rounded,
+                    title: 'Emergency\nContacts',
+                    color: const Color(0xFF10B981),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ContactsManagementPage(),
+                        ),
+                      ).then((_) => _loadContacts());
+                    },
+                  ),
+                  _buildModernActionCard(
+                    icon: Icons.local_police_rounded,
+                    title: 'Nearby\nPolice',
+                    color: const Color(0xFF3B82F6),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => NearbyStationsPage(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildModernActionCard(
+                    icon: Icons.local_hospital_rounded,
+                    title: 'Medical\nInfo',
+                    color: const Color(0xFFEF4444),
+                    onTap: () {
+                      _showSnackBar(
+                        'Medical info feature coming soon!',
+                        const Color(0xFF3B82F6),
+                      );
+                    },
+                  ),
+                  _buildModernActionCard(
+                    icon: Icons.history_rounded,
+                    title: 'Alert\nHistory',
+                    color: const Color(0xFF8B5CF6),
+                    onTap: () {
+                      _showSnackBar(
+                        'Alert history feature coming soon!',
+                        const Color(0xFF3B82F6),
+                      );
+                    },
+                  ),
+                ],
               ),
             ],
           ),
