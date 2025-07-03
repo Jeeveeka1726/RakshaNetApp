@@ -16,8 +16,16 @@ void main() async {
   // Request all permissions at app launch
   await _requestAllPermissions();
 
+  // Add delay to ensure permissions are processed
+  await Future.delayed(const Duration(seconds: 1));
+
   // Initialize background service after permissions
-  await initializeService();
+  try {
+    await initializeService();
+    print('Background service initialized successfully');
+  } catch (e) {
+    print('Failed to initialize background service: $e');
+  }
 
   runApp(const RakshaNetApp());
 }
@@ -26,12 +34,12 @@ Future<void> _requestAllPermissions() async {
   try {
     // Request permissions in groups for better success rate
 
+    // Notification permissions first (most important for foreground service)
+    await Permission.notification.request();
+
     // Location permissions
     await Permission.locationWhenInUse.request();
     await Permission.locationAlways.request();
-
-    // Notification permissions
-    await Permission.notification.request();
 
     // Audio permissions
     await Permission.microphone.request();
