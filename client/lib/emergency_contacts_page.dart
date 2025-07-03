@@ -32,13 +32,13 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _sendOtp() async {
-    if (_phoneController.text.isEmpty || 
-        _nameController.text.isEmpty || 
+    if (_phoneController.text.isEmpty ||
+        _nameController.text.isEmpty ||
         _relationshipController.text.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please fill all fields'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Color(0xFFF59E0B),
         ),
       );
       return;
@@ -64,14 +64,14 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('OTP sent successfully!'),
-            backgroundColor: Colors.green,
+            backgroundColor: Color(0xFF10B981),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['error'] ?? 'Failed to send OTP'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFEF4444),
           ),
         );
       }
@@ -83,7 +83,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: const Color(0xFFEF4444),
         ),
       );
     }
@@ -94,7 +94,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please enter a valid 4-digit OTP'),
-          backgroundColor: Colors.orange,
+          backgroundColor: Color(0xFFF59E0B),
         ),
       );
       return;
@@ -107,8 +107,8 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     try {
       // First verify OTP
       final verifyResult = await ApiService.verifyOtp(
-        _currentPhone, 
-        _otpController.text
+        _currentPhone,
+        _otpController.text,
       );
 
       if (verifyResult['success']) {
@@ -141,14 +141,14 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Contact verified and added successfully!'),
-              backgroundColor: Colors.green,
+              backgroundColor: Color(0xFF10B981),
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(addResult['error'] ?? 'Failed to add contact'),
-              backgroundColor: Colors.red,
+              backgroundColor: const Color(0xFFEF4444),
             ),
           );
         }
@@ -160,7 +160,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(verifyResult['error'] ?? 'OTP verification failed'),
-            backgroundColor: Colors.red,
+            backgroundColor: const Color(0xFFEF4444),
           ),
         );
       }
@@ -172,7 +172,7 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error: ${e.toString()}'),
-          backgroundColor: Colors.red,
+          backgroundColor: const Color(0xFFEF4444),
         ),
       );
     }
@@ -185,7 +185,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _continueToApp() {
-    // Always allow continuing to app, even without contacts
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -195,7 +194,6 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   }
 
   void _skipForNow() {
-    // Allow skipping contact setup
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
@@ -204,192 +202,456 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     );
   }
 
+  Widget _buildFormField({
+    required TextEditingController controller,
+    required String label,
+    required String hint,
+    required IconData icon,
+    TextInputType? keyboardType,
+    int? maxLength,
+    String? Function(String?)? validator,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: Theme.of(context).textTheme.titleMedium?.color,
+          ),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLength: maxLength,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon),
+            counterText: maxLength != null ? '' : null,
+          ),
+          validator: validator,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildContactCard(Map<String, dynamic> contact, int index) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).dividerColor, width: 1),
+      ),
+      child: ListTile(
+        contentPadding: const EdgeInsets.all(16),
+        leading: Container(
+          width: 48,
+          height: 48,
+          decoration: BoxDecoration(
+            color: const Color(0xFF2563EB).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Center(
+            child: Text(
+              contact['name'][0].toUpperCase(),
+              style: const TextStyle(
+                color: Color(0xFF2563EB),
+                fontWeight: FontWeight.w600,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ),
+        title: Text(
+          contact['name'],
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const SizedBox(height: 4),
+            Row(
+              children: [
+                const Icon(Icons.phone, size: 14, color: Color(0xFF6B7280)),
+                const SizedBox(width: 4),
+                Text(
+                  contact['phone'],
+                  style: const TextStyle(
+                    color: Color(0xFF6B7280),
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 2),
+            Row(
+              children: [
+                const Icon(
+                  Icons.family_restroom,
+                  size: 14,
+                  color: Color(0xFF10B981),
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  contact['relationship'],
+                  style: const TextStyle(
+                    color: Color(0xFF10B981),
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        trailing: IconButton(
+          icon: const Icon(Icons.delete_outline, color: Color(0xFFEF4444)),
+          onPressed: () => _removeContact(index),
+        ),
+        isThreeLine: true,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = screenWidth > 600;
+    final horizontalPadding = isTablet ? 40.0 : 24.0;
+    final maxWidth = isTablet ? 600.0 : double.infinity;
+
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Emergency Contacts'),
         automaticallyImplyLeading: false,
         actions: [
           TextButton(
             onPressed: _skipForNow,
-            child: const Text(
+            child: Text(
               'Skip',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(
+                color: Theme.of(context).textTheme.titleMedium?.color,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Text(
-                'Add Emergency Contacts',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Add trusted contacts who will be notified in case of emergency (Optional)',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: Colors.grey[600],
-                    ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 32),
+        child: Center(
+          child: Container(
+            constraints: BoxConstraints(maxWidth: maxWidth),
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const SizedBox(height: 24),
 
-              if (!_showOtpField) ...[
-                // Name Field
-                TextFormField(
-                  controller: _nameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Contact Name',
-                    prefixIcon: Icon(Icons.person),
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Phone Number Input
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  decoration: const InputDecoration(
-                    labelText: 'Phone Number',
-                    prefixIcon: Icon(Icons.phone),
-                    hintText: '+1234567890',
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Relationship Field
-                TextFormField(
-                  controller: _relationshipController,
-                  decoration: const InputDecoration(
-                    labelText: 'Relationship',
-                    prefixIcon: Icon(Icons.family_restroom),
-                    hintText: 'e.g., Father, Mother, Friend',
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Send OTP Button
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _sendOtp,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text('Send OTP'),
-                ),
-              ] else ...[
-                // OTP Field
-                Text(
-                  'OTP sent to $_currentPhone',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[600],
+                  // Header Section
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).dividerColor,
+                        width: 1,
                       ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 16),
-                
-                TextFormField(
-                  controller: _otpController,
-                  keyboardType: TextInputType.number,
-                  maxLength: 4,
-                  decoration: const InputDecoration(
-                    labelText: 'Enter 4-digit OTP',
-                    prefixIcon: Icon(Icons.security),
-                    hintText: '1234',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                
-                ElevatedButton(
-                  onPressed: _isVerifying ? null : _verifyOtp,
-                  child: _isVerifying
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
+                    ),
+                    child: Column(
+                      children: [
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(16),
                           ),
-                        )
-                      : const Text('Verify & Add Contact'),
-                ),
-                const SizedBox(height: 8),
-                
-                TextButton(
-                  onPressed: () {
-                    setState(() {
-                      _showOtpField = false;
-                      _otpController.clear();
-                    });
-                  },
-                  child: const Text('Cancel'),
-                ),
-              ],
-
-              const SizedBox(height: 32),
-
-              // Contacts List
-              if (_contacts.isNotEmpty) ...[
-                Text(
-                  'Emergency Contacts',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                      ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _contacts.length,
-                    itemBuilder: (context, index) {
-                      final contact = _contacts[index];
-                      return Card(
-                        child: ListTile(
-                          leading: const Icon(Icons.person),
-                          title: Text(contact['name']),
-                          subtitle: Text('${contact['phone']} • ${contact['relationship']}'),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _removeContact(index),
+                          child: const Icon(
+                            Icons.contacts_rounded,
+                            size: 32,
+                            color: Color(0xFF10B981),
                           ),
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ] else
-                const Expanded(
-                  child: Center(
-                    child: Text(
-                      'No emergency contacts added yet',
-                      style: TextStyle(color: Colors.grey),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Add Emergency Contacts',
+                          style: Theme.of(context).textTheme.headlineSmall,
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Add trusted contacts who will be notified in case of emergency (Optional)',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  const SizedBox(height: 32),
 
-              // Continue Button
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _continueToApp,
-                child: Text(_contacts.isNotEmpty ? 'Continue to App' : 'Continue Without Contacts'),
+                  // Form Section
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).cardColor,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Theme.of(context).dividerColor,
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _showOtpField
+                              ? 'Verify Contact'
+                              : 'Contact Information',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
+                        const SizedBox(height: 20),
+
+                        if (!_showOtpField) ...[
+                          // Contact Form Fields
+                          _buildFormField(
+                            controller: _nameController,
+                            label: 'Full Name',
+                            hint: 'Enter contact name',
+                            icon: Icons.person_outline,
+                          ),
+                          const SizedBox(height: 20),
+
+                          _buildFormField(
+                            controller: _phoneController,
+                            label: 'Phone Number',
+                            hint: '+1234567890',
+                            icon: Icons.phone_outlined,
+                            keyboardType: TextInputType.phone,
+                          ),
+                          const SizedBox(height: 20),
+
+                          _buildFormField(
+                            controller: _relationshipController,
+                            label: 'Relationship',
+                            hint: 'e.g., Father, Mother, Friend',
+                            icon: Icons.family_restroom_outlined,
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Send OTP Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              onPressed: _isLoading ? null : _sendOtp,
+                              icon:
+                                  _isLoading
+                                      ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : const Icon(Icons.sms_outlined),
+                              label: Text(
+                                _isLoading ? 'Sending...' : 'Send OTP',
+                              ),
+                            ),
+                          ),
+                        ] else ...[
+                          // OTP Verification Section
+                          Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2563EB).withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF2563EB).withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(
+                                  Icons.info_outline,
+                                  color: Color(0xFF2563EB),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    'OTP sent to $_currentPhone',
+                                    style: const TextStyle(
+                                      color: Color(0xFF2563EB),
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+
+                          _buildFormField(
+                            controller: _otpController,
+                            label: 'Enter OTP',
+                            hint: '1234',
+                            icon: Icons.security_outlined,
+                            keyboardType: TextInputType.number,
+                            maxLength: 4,
+                          ),
+                          const SizedBox(height: 24),
+
+                          // Verify Button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 52,
+                            child: ElevatedButton.icon(
+                              onPressed: _isVerifying ? null : _verifyOtp,
+                              icon:
+                                  _isVerifying
+                                      ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.white,
+                                              ),
+                                        ),
+                                      )
+                                      : const Icon(Icons.verified_outlined),
+                              label: Text(
+                                _isVerifying
+                                    ? 'Verifying...'
+                                    : 'Verify & Add Contact',
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+
+                          // Cancel Button
+                          SizedBox(
+                            width: double.infinity,
+                            child: TextButton(
+                              onPressed: () {
+                                setState(() {
+                                  _showOtpField = false;
+                                  _otpController.clear();
+                                });
+                              },
+                              child: const Text('Cancel'),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+
+                  // Contacts List Section
+                  if (_contacts.isNotEmpty) ...[
+                    Text(
+                      'Added Contacts (${_contacts.length})',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Responsive contact list
+                    if (isTablet)
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate:
+                            const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 2.5,
+                            ),
+                        itemCount: _contacts.length,
+                        itemBuilder: (context, index) {
+                          return _buildContactCard(_contacts[index], index);
+                        },
+                      )
+                    else
+                      ListView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: _contacts.length,
+                        itemBuilder: (context, index) {
+                          return _buildContactCard(_contacts[index], index);
+                        },
+                      ),
+                  ] else ...[
+                    // Empty State
+                    Container(
+                      padding: const EdgeInsets.all(40),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).cardColor,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: Theme.of(context).dividerColor,
+                          width: 1,
+                        ),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.contacts_outlined,
+                            size: 64,
+                            color: Colors.grey[400],
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'No contacts added yet',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(color: Colors.grey[600]),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Add emergency contacts to get started',
+                            style: Theme.of(context).textTheme.bodyMedium
+                                ?.copyWith(color: Colors.grey[500]),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 32),
+
+                  // Continue Button
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton.icon(
+                      onPressed: _continueToApp,
+                      icon: const Icon(Icons.arrow_forward_outlined),
+                      label: Text(
+                        _contacts.isNotEmpty
+                            ? 'Continue to App'
+                            : 'Continue Without Contacts',
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ),
