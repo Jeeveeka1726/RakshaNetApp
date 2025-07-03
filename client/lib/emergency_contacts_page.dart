@@ -15,23 +15,45 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _relationshipController = TextEditingController();
-  final _otpController = TextEditingController();
   final List<Map<String, dynamic>> _contacts = [];
-  bool _showOtpField = false;
-  bool _isVerifying = false;
   bool _isLoading = false;
-  String _currentPhone = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingContacts();
+  }
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
     _relationshipController.dispose();
-    _otpController.dispose();
     super.dispose();
   }
 
-  void _sendOtp() async {
+  void _loadExistingContacts() async {
+    try {
+      final result = await ApiService.getContacts();
+      if (result['success'] && result['data'] != null) {
+        setState(() {
+          _contacts.clear();
+          for (var contact in result['data']) {
+            _contacts.add({
+              'id': contact['id'],
+              'name': contact['name'],
+              'phone': contact['phone'],
+              'relationship': contact['relationship'],
+            });
+          }
+        });
+      }
+    } catch (e) {
+      print('Error loading contacts: $e');
+    }
+  }
+
+  void _addContact() async {
     if (_phoneController.text.isEmpty ||
         _nameController.text.isEmpty ||
         _relationshipController.text.isEmpty) {
@@ -49,7 +71,11 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     });
 
     try {
-      final result = await ApiService.sendOtp(_phoneController.text.trim());
+      final result = await ApiService.addContact(
+        name: _nameController.text.trim(),
+        phone: _phoneController.text.trim(),
+        relationship: _relationshipController.text.trim(),
+      );
 
       setState(() {
         _isLoading = false;
@@ -57,20 +83,27 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
 
       if (result['success']) {
         setState(() {
-          _currentPhone = _phoneController.text.trim();
-          _showOtpField = true;
+          _contacts.add({
+            'id': result['data']['id'] ?? DateTime.now().millisecondsSinceEpoch.toString(),
+            'name': _nameController.text.trim(),
+            'phone': _phoneController.text.trim(),
+            'relationship': _relationshipController.text.trim(),
+          });
+          _nameController.clear();
+          _phoneController.clear();
+          _relationshipController.clear();
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('OTP sent successfully!'),
+            content: Text('Contact added successfully!'),
             backgroundColor: Color(0xFF10B981),
           ),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(result['error'] ?? 'Failed to send OTP'),
+            content: Text(result['error'] ?? 'Failed to add contact'),
             backgroundColor: const Color(0xFFEF4444),
           ),
         );
@@ -89,99 +122,41 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
     }
   }
 
-  void _verifyOtp() async {
-    if (_otpController.text.length != 4) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a valid 4-digit OTP'),
-          backgroundColor: Color(0xFFF59E0B),
-        ),
-      );
-      return;
-    }
-
-    setState(() {
-      _isVerifying = true;
-    });
-
+  void _removeContact(int index) async {
+    final contact = _contacts[index];
+    
     try {
-      // First verify OTP
-      final verifyResult = await ApiService.verifyOtp(
-        _currentPhone,
-        _otpController.text,
-      );
-
-      if (verifyResult['success']) {
-        // Then add contact
-        final addResult = await ApiService.addContact(
-          name: _nameController.text.trim(),
-          phone: _currentPhone,
-          relationship: _relationshipController.text.trim(),
-        );
-
-        setState(() {
-          _isVerifying = false;
-        });
-
-        if (addResult['success']) {
-          setState(() {
-            _contacts.add({
-              'name': _nameController.text.trim(),
-              'phone': _currentPhone,
-              'relationship': _relationshipController.text.trim(),
-            });
-            _nameController.clear();
-            _phoneController.clear();
-            _relationshipController.clear();
-            _otpController.clear();
-            _showOtpField = false;
-            _currentPhone = '';
-          });
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Contact verified and added successfully!'),
-              backgroundColor: Color(0xFF10B981),
-            ),
-          );
-        } else {
+      if (contact['id'] != null) {
+        final result = await ApiService.deleteContact(contact['id']);
+        if (!result['success']) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(addResult['error'] ?? 'Failed to add contact'),
+              content: Text(result['error'] ?? 'Failed to delete contact'),
               backgroundColor: const Color(0xFFEF4444),
             ),
           );
+          return;
         }
-      } else {
-        setState(() {
-          _isVerifying = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(verifyResult['error'] ?? 'OTP verification failed'),
-            backgroundColor: const Color(0xFFEF4444),
-          ),
-        );
       }
-    } catch (e) {
+      
       setState(() {
-        _isVerifying = false;
+        _contacts.removeAt(index);
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Contact removed successfully'),
+          backgroundColor: Color(0xFF10B981),
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: ${e.toString()}'),
+          content: Text('Error removing contact: ${e.toString()}'),
           backgroundColor: const Color(0xFFEF4444),
         ),
       );
     }
-  }
-
-  void _removeContact(int index) {
-    setState(() {
-      _contacts.removeAt(index);
-    });
   }
 
   void _continueToApp() {
@@ -411,152 +386,60 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          _showOtpField
-                              ? 'Verify Contact'
-                              : 'Contact Information',
+                          'Contact Information',
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         const SizedBox(height: 20),
 
-                        if (!_showOtpField) ...[
-                          // Contact Form Fields
-                          _buildFormField(
-                            controller: _nameController,
-                            label: 'Full Name',
-                            hint: 'Enter contact name',
-                            icon: Icons.person_outline,
-                          ),
-                          const SizedBox(height: 20),
+                        // Contact Form Fields
+                        _buildFormField(
+                          controller: _nameController,
+                          label: 'Full Name',
+                          hint: 'Enter contact name',
+                          icon: Icons.person_outline,
+                        ),
+                        const SizedBox(height: 20),
 
-                          _buildFormField(
-                            controller: _phoneController,
-                            label: 'Phone Number',
-                            hint: '+1234567890',
-                            icon: Icons.phone_outlined,
-                            keyboardType: TextInputType.phone,
-                          ),
-                          const SizedBox(height: 20),
+                        _buildFormField(
+                          controller: _phoneController,
+                          label: 'Phone Number',
+                          hint: '+1234567890',
+                          icon: Icons.phone_outlined,
+                          keyboardType: TextInputType.phone,
+                        ),
+                        const SizedBox(height: 20),
 
-                          _buildFormField(
-                            controller: _relationshipController,
-                            label: 'Relationship',
-                            hint: 'e.g., Father, Mother, Friend',
-                            icon: Icons.family_restroom_outlined,
-                          ),
-                          const SizedBox(height: 24),
+                        _buildFormField(
+                          controller: _relationshipController,
+                          label: 'Relationship',
+                          hint: 'e.g., Father, Mother, Friend',
+                          icon: Icons.family_restroom_outlined,
+                        ),
+                        const SizedBox(height: 24),
 
-                          // Send OTP Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: ElevatedButton.icon(
-                              onPressed: _isLoading ? null : _sendOtp,
-                              icon:
-                                  _isLoading
-                                      ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                        ),
-                                      )
-                                      : const Icon(Icons.sms_outlined),
-                              label: Text(
-                                _isLoading ? 'Sending...' : 'Send OTP',
-                              ),
-                            ),
-                          ),
-                        ] else ...[
-                          // OTP Verification Section
-                          Container(
-                            padding: const EdgeInsets.all(16),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF2563EB).withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFF2563EB).withOpacity(0.2),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                const Icon(
-                                  Icons.info_outline,
-                                  color: Color(0xFF2563EB),
-                                  size: 20,
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    'OTP sent to $_currentPhone',
-                                    style: const TextStyle(
-                                      color: Color(0xFF2563EB),
-                                      fontWeight: FontWeight.w500,
+                        // Add Contact Button
+                        SizedBox(
+                          width: double.infinity,
+                          height: 52,
+                          child: ElevatedButton.icon(
+                            onPressed: _isLoading ? null : _addContact,
+                            icon: _isLoading
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        Colors.white,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ],
+                                  )
+                                : const Icon(Icons.person_add_outlined),
+                            label: Text(
+                              _isLoading ? 'Adding...' : 'Add Contact',
                             ),
                           ),
-                          const SizedBox(height: 20),
-
-                          _buildFormField(
-                            controller: _otpController,
-                            label: 'Enter OTP',
-                            hint: '1234',
-                            icon: Icons.security_outlined,
-                            keyboardType: TextInputType.number,
-                            maxLength: 4,
-                          ),
-                          const SizedBox(height: 24),
-
-                          // Verify Button
-                          SizedBox(
-                            width: double.infinity,
-                            height: 52,
-                            child: ElevatedButton.icon(
-                              onPressed: _isVerifying ? null : _verifyOtp,
-                              icon:
-                                  _isVerifying
-                                      ? const SizedBox(
-                                        width: 20,
-                                        height: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.white,
-                                              ),
-                                        ),
-                                      )
-                                      : const Icon(Icons.verified_outlined),
-                              label: Text(
-                                _isVerifying
-                                    ? 'Verifying...'
-                                    : 'Verify & Add Contact',
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          // Cancel Button
-                          SizedBox(
-                            width: double.infinity,
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _showOtpField = false;
-                                  _otpController.clear();
-                                });
-                              },
-                              child: const Text('Cancel'),
-                            ),
-                          ),
-                        ],
+                        ),
                       ],
                     ),
                   ),
@@ -577,11 +460,11 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                         physics: const NeverScrollableScrollPhysics(),
                         gridDelegate:
                             const SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: 2,
-                              crossAxisSpacing: 16,
-                              mainAxisSpacing: 12,
-                              childAspectRatio: 2.5,
-                            ),
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 16,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: 2.5,
+                        ),
                         itemCount: _contacts.length,
                         itemBuilder: (context, index) {
                           return _buildContactCard(_contacts[index], index);
@@ -618,13 +501,17 @@ class _EmergencyContactsPageState extends State<EmergencyContactsPage> {
                           const SizedBox(height: 16),
                           Text(
                             'No contacts added yet',
-                            style: Theme.of(context).textTheme.titleMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .titleMedium
                                 ?.copyWith(color: Colors.grey[600]),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Add emergency contacts to get started',
-                            style: Theme.of(context).textTheme.bodyMedium
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
                                 ?.copyWith(color: Colors.grey[500]),
                             textAlign: TextAlign.center,
                           ),
