@@ -1,32 +1,37 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    package="com.example.client"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Permissions -->
+    <!-- 🔐 Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
-    <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
 
     <application
         android:name="${applicationName}"
         android:label="RakshaNet"
         android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true"
         android:enableOnBackInvokedCallback="true">
 
+        <!-- 🧭 Main Activity (Flutter Entry Point) -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -47,17 +52,17 @@
             </intent-filter>
         </activity>
 
-        <!-- Background Service -->
+        <!-- ⚙️ Background Service -->
         <service
             android:name="id.flutter.flutter_background_service.BackgroundService"
-            android:exported="false"
             android:enabled="true"
-            android:foregroundServiceType="dataSync|location"
+            android:exported="false"
+            android:foregroundServiceType="dataSync|location|microphone"
             tools:replace="android:exported" />
 
-        <!-- Boot receiver -->
+        <!-- 🔁 Boot Completed Receiver (Optional: implement if needed) -->
         <receiver
-            android:name="com.example.rakshanet.MyBootReceiver"
+            android:name="com.example.client.MyBootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>
@@ -65,17 +70,26 @@
             </intent-filter>
         </receiver>
 
-        <!-- Required for Flutter plugin registration -->
+        <!-- 📱 Notification Channel ID (if using Firebase or FCM) -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="raksha_safety_monitor" />
+
+        <!-- 🧩 Flutter Plugin Registration -->
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
 
-    <!-- External app interaction (for intents like dial, sms, etc.) -->
+    <!-- 🔗 External App Intents (for URL, SMS, Dial, etc.) -->
     <queries>
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <data android:scheme="https" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="http" />
         </intent>
         <intent>
             <action android:name="android.intent.action.DIAL" />
