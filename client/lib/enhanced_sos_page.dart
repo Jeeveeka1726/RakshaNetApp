@@ -113,7 +113,7 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
     if (method == 'SMS') {
       await _sendSMS();
     } else {
-      await _makeCall();
+      await _sendSMS();
     }
   }
 
