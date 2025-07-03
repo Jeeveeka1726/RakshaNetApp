@@ -5,7 +5,7 @@ import 'dart:convert';
 import 'package:url_launcher/url_launcher.dart';
 
 // You'll need to replace this with your actual Google API key
-const GOOGLE_API_KEY = 'YOUR_GOOGLE_API_KEY';
+const GOOGLE_API_KEY = 'AIzaSyAeN6n8eMSKveBnlZT_oQQcgsFUfVjVfac';
 
 class NearbyStationsPage extends StatefulWidget {
   @override
