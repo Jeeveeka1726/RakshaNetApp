@@ -43,13 +43,13 @@ router.post("/voice", async (req, res) => {
     }
 
     const phoneNumbers = contacts.map((contact) => contact.phone);
-    const message = `🚨 VOICE SOS ALERT! 🚨\n${name} triggered a voice alert via RakshaNet!`;
+    const message = `🚨 SOS ALERT! 🚨\n${name} triggered an alert via RakshaNet!`;
 
     await sendFast2SMS(phoneNumbers, message);
 
     res.json({
       success: true,
-      message: `Voice SOS alert sent to ${phoneNumbers.length} emergency contacts`,
+      message: `SOS alert sent to ${phoneNumbers.length} emergency contacts`,
       contactsNotified: phoneNumbers.length,
     });
   } catch (err) {
