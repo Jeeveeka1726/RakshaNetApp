@@ -27,13 +27,9 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
       duration: const Duration(seconds: 1),
       vsync: this,
     );
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
     _getLocationUpdates();
   }
 
@@ -49,20 +45,22 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
       LocationPermission permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        _showAlert('Permission Denied', 'Location access is required for SOS functionality.');
+        _showAlert(
+          'Permission Denied',
+          'Location access is required for SOS functionality.',
+        );
         return;
       }
 
-      // Get current position
       currentPosition = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
 
       setState(() {
-        locationLink = 'https://www.google.com/maps?q=${currentPosition!.latitude},${currentPosition!.longitude}';
+        locationLink =
+            'https://www.google.com/maps?q=${currentPosition!.latitude},${currentPosition!.longitude}';
       });
 
-      // Listen for position updates
       Geolocator.getPositionStream(
         locationSettings: const LocationSettings(
           accuracy: LocationAccuracy.high,
@@ -71,7 +69,8 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
       ).listen((Position position) {
         setState(() {
           currentPosition = position;
-          locationLink = 'https://www.google.com/maps?q=${position.latitude},${position.longitude}';
+          locationLink =
+              'https://www.google.com/maps?q=${position.latitude},${position.longitude}';
         });
       });
     } catch (e) {
@@ -127,7 +126,8 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
     setState(() => loading = true);
 
     try {
-      final message = '🚨 EMERGENCY SOS ALERT! 🚨\n\n'
+      final message =
+          '🚨 EMERGENCY SOS ALERT! 🚨\n\n'
           'I need immediate help!\n\n'
           '📍 My current location:\n$locationLink\n\n'
           'This is an automated emergency message from RakshaNet.';
@@ -135,7 +135,10 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
       final result = await ApiService.sendSosSms(message);
 
       if (result['success']) {
-        _showAlert('SOS Sent!', 'Emergency SMS has been sent to all your emergency contacts.');
+        _showAlert(
+          'SOS Sent!',
+          'Emergency SMS has been sent to all your emergency contacts.',
+        );
       } else {
         _showAlert('Error', result['error'] ?? 'Failed to send SOS SMS');
       }
@@ -155,15 +158,17 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
     setState(() => loading = true);
 
     try {
-      final message = 'Emergency SOS Alert! I need immediate help. '
+      final message =
+          'Emergency SOS Alert! I need immediate help. '
           'My location: $locationLink';
 
-      // For now, we'll use the first emergency contact
-      // In a real implementation, you might want to get contacts from storage
       final result = await ApiService.makeSosCall('+1234567890', message);
 
       if (result['success']) {
-        _showAlert('SOS Call Initiated!', 'Emergency call has been placed to your primary contact.');
+        _showAlert(
+          'SOS Call Initiated!',
+          'Emergency call has been placed to your primary contact.',
+        );
       } else {
         _showAlert('Error', result['error'] ?? 'Failed to make SOS call');
       }
@@ -177,100 +182,141 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
   void _showAlert(String title, String content) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(
-              title.contains('Error') ? Icons.error : Icons.check_circle,
-              color: title.contains('Error') ? Colors.red : Colors.green,
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                Icon(
+                  title.contains('Error') ? Icons.error : Icons.check_circle,
+                  color: title.contains('Error') ? Colors.red : Colors.green,
+                ),
+                const SizedBox(width: 8),
+                Text(title),
+              ],
             ),
-            const SizedBox(width: 8),
-            Text(title),
-          ],
-        ),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
+            content: Text(content),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('OK'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       appBar: AppBar(
         title: const Text('Emergency SOS'),
-        backgroundColor: Colors.red[700],
+        backgroundColor: const Color(0xFFEF4444),
+        foregroundColor: Colors.white,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.red[50]!,
-              Colors.white,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Center(
-            child: loading
-                ? Column(
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child:
+              loading
+                  ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const CircularProgressIndicator(color: Colors.red),
-                      const SizedBox(height: 16),
+                      const CircularProgressIndicator(
+                        color: Color(0xFFEF4444),
+                        strokeWidth: 3,
+                      ),
+                      const SizedBox(height: 24),
                       Text(
                         'Sending emergency alert...',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium,
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Please wait while we notify your emergency contacts',
+                        style: Theme.of(context).textTheme.bodyMedium,
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                  : Column(
                     children: [
                       // Location status
                       Container(
-                        margin: const EdgeInsets.all(16),
-                        padding: const EdgeInsets.all(16),
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: locationLink != null ? Colors.green[50] : Colors.orange[50],
-                          borderRadius: BorderRadius.circular(12),
+                          color:
+                              locationLink != null
+                                  ? const Color(0xFF10B981).withOpacity(0.05)
+                                  : const Color(0xFFF59E0B).withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(16),
                           border: Border.all(
-                            color: locationLink != null ? Colors.green[200]! : Colors.orange[200]!,
+                            color:
+                                locationLink != null
+                                    ? const Color(0xFF10B981).withOpacity(0.2)
+                                    : const Color(0xFFF59E0B).withOpacity(0.2),
+                            width: 1,
                           ),
                         ),
                         child: Row(
                           children: [
-                            Icon(
-                              locationLink != null ? Icons.location_on : Icons.location_off,
-                              color: locationLink != null ? Colors.green[700] : Colors.orange[700],
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
+                            Container(
+                              width: 48,
+                              height: 48,
+                              decoration: BoxDecoration(
+                                color: (locationLink != null
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFFF59E0B))
+                                    .withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
                                 locationLink != null
-                                    ? 'Location tracking active'
-                                    : 'Getting your location...',
-                                style: TextStyle(
-                                  color: locationLink != null ? Colors.green[700] : Colors.orange[700],
-                                  fontWeight: FontWeight.w500,
-                                ),
+                                    ? Icons.location_on
+                                    : Icons.location_searching,
+                                color:
+                                    locationLink != null
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFFF59E0B),
+                                size: 24,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    locationLink != null
+                                        ? 'Location Ready'
+                                        : 'Getting Location...',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                      color:
+                                          locationLink != null
+                                              ? const Color(0xFF10B981)
+                                              : const Color(0xFFF59E0B),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    locationLink != null
+                                        ? 'Your location will be shared with emergency contacts'
+                                        : 'Please wait while we get your current location',
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
                               ),
                             ),
                           ],
                         ),
                       ),
 
-                      const SizedBox(height: 32),
+                      const Spacer(),
 
                       // SOS Button
                       AnimatedBuilder(
@@ -279,36 +325,41 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
                           return Transform.scale(
                             scale: modalVisible ? _pulseAnimation.value : 1.0,
                             child: GestureDetector(
-                              onTap: locationLink != null ? _startCountdown : null,
+                              onTap:
+                                  locationLink != null ? _startCountdown : null,
                               child: Container(
                                 width: 200,
                                 height: 200,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: locationLink != null ? Colors.red : Colors.grey,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: (locationLink != null ? Colors.red : Colors.grey).withOpacity(0.3),
-                                      blurRadius: 20,
-                                      spreadRadius: 5,
-                                    ),
-                                  ],
+                                  color:
+                                      locationLink != null
+                                          ? const Color(0xFFEF4444)
+                                          : Colors.grey[400],
+                                  border: Border.all(
+                                    color: (locationLink != null
+                                            ? const Color(0xFFEF4444)
+                                            : Colors.grey[400]!)
+                                        .withOpacity(0.3),
+                                    width: 6,
+                                  ),
                                 ),
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
                                     const Icon(
-                                      Icons.warning,
-                                      size: 60,
+                                      Icons.warning_rounded,
+                                      size: 56,
                                       color: Colors.white,
                                     ),
-                                    const SizedBox(height: 8),
+                                    const SizedBox(height: 12),
                                     const Text(
                                       'SOS',
                                       style: TextStyle(
                                         color: Colors.white,
                                         fontSize: 32,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w700,
+                                        letterSpacing: 4,
                                       ),
                                     ),
                                     if (modalVisible)
@@ -317,7 +368,7 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
                                         style: const TextStyle(
                                           color: Colors.white,
                                           fontSize: 24,
-                                          fontWeight: FontWeight.bold,
+                                          fontWeight: FontWeight.w700,
                                         ),
                                       ),
                                   ],
@@ -328,59 +379,92 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
                         },
                       ),
 
-                      const SizedBox(height: 32),
+                      const Spacer(),
 
-                      Text(
-                        'Press and hold to activate emergency SOS',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey[600],
+                      // Instructions
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).cardColor,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: Theme.of(context).dividerColor,
+                            width: 1,
+                          ),
                         ),
-                        textAlign: TextAlign.center,
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.info_outline,
+                              color: Color(0xFF2563EB),
+                              size: 24,
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              'How to Use',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600,
+                                color:
+                                    Theme.of(
+                                      context,
+                                    ).textTheme.titleMedium?.color,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Tap and hold the SOS button to activate emergency mode. You\'ll have 10 seconds to choose how to alert your contacts.',
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.bodyMedium,
+                            ),
+                          ],
+                        ),
                       ),
 
                       // Method selection modal
                       if (modalVisible)
                         Container(
-                          margin: const EdgeInsets.all(16),
-                          padding: const EdgeInsets.all(20),
+                          margin: const EdgeInsets.only(top: 24),
+                          padding: const EdgeInsets.all(24),
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 10,
-                                spreadRadius: 2,
-                              ),
-                            ],
+                            color: Theme.of(context).cardColor,
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Theme.of(context).dividerColor,
+                              width: 1,
+                            ),
                           ),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
-                                'Choose SOS Method ($countdown s)',
+                                'Choose Alert Method',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Sending alert in $countdown seconds',
                                 style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFFEF4444),
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Emergency contacts will be notified',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 24),
                               Row(
                                 children: [
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.blue,
+                                        backgroundColor: const Color(
+                                          0xFF3B82F6,
+                                        ),
                                         foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
                                       ),
-                                      icon: const Icon(Icons.sms),
+                                      icon: const Icon(Icons.sms_outlined),
                                       label: const Text('Send SMS'),
                                       onPressed: () {
                                         timer?.cancel();
@@ -390,15 +474,19 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
                                       },
                                     ),
                                   ),
-                                  const SizedBox(width: 12),
+                                  const SizedBox(width: 16),
                                   Expanded(
                                     child: ElevatedButton.icon(
                                       style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.green,
+                                        backgroundColor: const Color(
+                                          0xFF10B981,
+                                        ),
                                         foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
                                       ),
-                                      icon: const Icon(Icons.call),
+                                      icon: const Icon(Icons.call_outlined),
                                       label: const Text('Make Call'),
                                       onPressed: () {
                                         timer?.cancel();
@@ -410,12 +498,15 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 16),
                               TextButton(
                                 onPressed: _cancelCountdown,
                                 child: const Text(
                                   'Cancel',
-                                  style: TextStyle(color: Colors.red),
+                                  style: TextStyle(
+                                    color: Color(0xFFEF4444),
+                                    fontWeight: FontWeight.w600,
+                                  ),
                                 ),
                               ),
                             ],
@@ -423,7 +514,6 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
                         ),
                     ],
                   ),
-          ),
         ),
       ),
     );
