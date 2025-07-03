@@ -10,26 +10,14 @@ module.exports = (sequelize) => {
     name: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [2, 100],
-      },
     },
     phone: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-        is: /^[+]?[1-9][\d]{0,15}$/,
-      },
     },
     relationship: {
       type: DataTypes.STRING,
       allowNull: false,
-      validate: {
-        notEmpty: true,
-        len: [2, 50],
-      },
     },
     userId: {
       type: DataTypes.UUID,
