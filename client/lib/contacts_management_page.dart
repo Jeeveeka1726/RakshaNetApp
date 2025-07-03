@@ -105,10 +105,7 @@ class _ContactsManagementPageState extends State<ContactsManagementPage> {
     final nameController = TextEditingController();
     final phoneController = TextEditingController();
     final relationshipController = TextEditingController();
-    final otpController = TextEditingController();
-    bool showOtpField = false;
     bool isLoading = false;
-    String currentPhone = '';
 
     showDialog(
       context: context,
@@ -119,46 +116,32 @@ class _ContactsManagementPageState extends State<ContactsManagementPage> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (!showOtpField) ...[
-                  TextField(
-                    controller: nameController,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      prefixIcon: Icon(Icons.person),
-                    ),
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Name',
+                    prefixIcon: Icon(Icons.person),
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: phoneController,
-                    keyboardType: TextInputType.phone,
-                    decoration: const InputDecoration(
-                      labelText: 'Phone Number',
-                      prefixIcon: Icon(Icons.phone),
-                      hintText: '+1234567890',
-                    ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'Phone Number',
+                    prefixIcon: Icon(Icons.phone),
+                    hintText: '+1234567890',
                   ),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: relationshipController,
-                    decoration: const InputDecoration(
-                      labelText: 'Relationship',
-                      prefixIcon: Icon(Icons.family_restroom),
-                      hintText: 'e.g., Father, Mother, Friend',
-                    ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: relationshipController,
+                  decoration: const InputDecoration(
+                    labelText: 'Relationship',
+                    prefixIcon: Icon(Icons.family_restroom),
+                    hintText: 'e.g., Father, Mother, Friend',
                   ),
-                ] else ...[
-                  Text('OTP sent to $currentPhone'),
-                  const SizedBox(height: 16),
-                  TextField(
-                    controller: otpController,
-                    keyboardType: TextInputType.number,
-                    maxLength: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Enter OTP',
-                      prefixIcon: Icon(Icons.security),
-                    ),
-                  ),
-                ],
+                ),
               ],
             ),
           ),
@@ -167,147 +150,71 @@ class _ContactsManagementPageState extends State<ContactsManagementPage> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Cancel'),
             ),
-            if (!showOtpField)
-              ElevatedButton(
-                onPressed: isLoading ? null : () async {
-                  if (nameController.text.isEmpty ||
-                      phoneController.text.isEmpty ||
-                      relationshipController.text.isEmpty) {
+            ElevatedButton(
+              onPressed: isLoading ? null : () async {
+                if (nameController.text.isEmpty ||
+                    phoneController.text.isEmpty ||
+                    relationshipController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please fill all fields'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
+                setDialogState(() {
+                  isLoading = true;
+                });
+
+                try {
+                  final result = await ApiService.addContact(
+                    name: nameController.text.trim(),
+                    phone: phoneController.text.trim(),
+                    relationship: relationshipController.text.trim(),
+                  );
+
+                  if (result['success']) {
+                    Navigator.pop(context);
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Please fill all fields'),
-                        backgroundColor: Colors.orange,
+                        content: Text('Contact added successfully!'),
+                        backgroundColor: Colors.green,
                       ),
                     );
-                    return;
-                  }
-
-                  setDialogState(() {
-                    isLoading = true;
-                  });
-
-                  try {
-                    final result = await ApiService.sendOtp(phoneController.text.trim());
-                    if (result['success']) {
-                      setDialogState(() {
-                        currentPhone = phoneController.text.trim();
-                        showOtpField = true;
-                        isLoading = false;
-                      });
-                    } else {
-                      setDialogState(() {
-                        isLoading = false;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(result['error'] ?? 'Failed to send OTP'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  } catch (e) {
+                    _loadContacts(); // Refresh the list
+                  } else {
                     setDialogState(() {
                       isLoading = false;
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(
-                        content: Text('Error: ${e.toString()}'),
+                        content: Text(result['error'] ?? 'Failed to add contact'),
                         backgroundColor: Colors.red,
                       ),
                     );
                   }
-                },
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Send OTP'),
-              )
-            else
-              ElevatedButton(
-                onPressed: isLoading ? null : () async {
-                  if (otpController.text.length != 4) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Please enter a valid 4-digit OTP'),
-                        backgroundColor: Colors.orange,
-                      ),
-                    );
-                    return;
-                  }
-
+                } catch (e) {
                   setDialogState(() {
-                    isLoading = true;
+                    isLoading = false;
                   });
-
-                  try {
-                    // Verify OTP
-                    final verifyResult = await ApiService.verifyOtp(
-                      currentPhone,
-                      otpController.text,
-                    );
-
-                    if (verifyResult['success']) {
-                      // Add contact
-                      final addResult = await ApiService.addContact(
-                        name: nameController.text.trim(),
-                        phone: currentPhone,
-                        relationship: relationshipController.text.trim(),
-                      );
-
-                      if (addResult['success']) {
-                        Navigator.pop(context);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Contact added successfully!'),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        _loadContacts(); // Refresh the list
-                      } else {
-                        setDialogState(() {
-                          isLoading = false;
-                        });
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(addResult['error'] ?? 'Failed to add contact'),
-                            backgroundColor: Colors.red,
-                          ),
-                        );
-                      }
-                    } else {
-                      setDialogState(() {
-                        isLoading = false;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(verifyResult['error'] ?? 'OTP verification failed'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
-                    }
-                  } catch (e) {
-                    setDialogState(() {
-                      isLoading = false;
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Error: ${e.toString()}'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
-                },
-                child: isLoading
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Text('Verify & Add'),
-              ),
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: ${e.toString()}'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
+              child: isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Text('Add Contact'),
+            ),
           ],
         ),
       ),

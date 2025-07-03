@@ -269,7 +269,7 @@ class ApiService {
         Uri.parse('$baseUrl/sos/voice'),
         headers: headers,
       );
-      
+      print('Voice SOS response: ${response.body}');
       return jsonDecode(response.body);
     } catch (e) {
       return {
@@ -287,7 +287,7 @@ class ApiService {
         Uri.parse('$baseUrl/sos/motion'),
         headers: headers,
       );
-      
+      print('Motion SOS Response: ${response.body}');
       return jsonDecode(response.body);
     } catch (e) {
       return {
