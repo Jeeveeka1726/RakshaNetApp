@@ -6,7 +6,7 @@ const router = express.Router();
 
 // ✅ Fast2SMS config
 const FAST2SMS_API_KEY =
-  "iDJxaW8B6ze0pn2lO5NhgFufKH3TXMdytUQrsLqSmYAcCjZv1PA2fhW67eCH3y8pYZ4NIuvEsmjGQbUM";
+  "zTXenxgJhCwoaPjcxdO4GGfExiX3JKQpBWmQA2xepZ8qyQpph69IvhWT50y5";
 const FAST2SMS_API_URL = "https://www.fast2sms.com/dev/bulkV2";
 
 // ✅ Updated: Shared function to send SMS using POST

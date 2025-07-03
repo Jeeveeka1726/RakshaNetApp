@@ -20,7 +20,7 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioNumber = process.env.TWILIO_PHONE_NUMBER;
 const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
-const fast2smsApiKey = process.env.FAST2SMS_API_KEY;
+const fast2smsApiKey = "zTXenxgJhCwoaPjcxdO4GGfExiX3JKQpBWmQA2xepZ8qyQpph69IvhWT50y5";
 const fast2smsRecipients = process.env.FAST2SMS_RECIPIENTS; // comma-separated numbers
 
 const client = twilio(accountSid, authToken);
