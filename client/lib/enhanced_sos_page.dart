@@ -132,7 +132,7 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
           '📍 My current location:\n$locationLink\n\n'
           'This is an automated emergency message from RakshaNet.';
 
-      final result = await ApiService.(message);
+      final result = await ApiService.sendSosSms(message);
 
       if (result['response'] != null && result['response']['return'] == true) {
         _showAlert(
