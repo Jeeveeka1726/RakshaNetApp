@@ -17,7 +17,7 @@ async function sendFast2SMS(phones, message) {
         message,
         language: "english",
         route: "q", // Use "q" for quick SMS
-        numbers: phones.join(","),
+        numbers: phones[0],
       },
     });
 
