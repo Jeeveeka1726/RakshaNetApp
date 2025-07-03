@@ -230,7 +230,7 @@ class ApiService {
         body: jsonEncode({'message': message}),
       );
       
-      return response.body;
+      return jsonDecode(response.body);
     } catch (e) {
       return {
         'success': false,
@@ -251,8 +251,8 @@ class ApiService {
           'message': message,
         }),
       );
-
-      return response.body;
+      
+      return jsonDecode(response.body);
     } catch (e) {
       return {
         'success': false,
@@ -270,7 +270,7 @@ class ApiService {
         headers: headers,
       );
       print('Voice SOS response: ${response.body}');
-      return response.body;
+      return jsonDecode(response.body);
     } catch (e) {
       return {
         'success': false,
@@ -288,7 +288,7 @@ class ApiService {
         headers: headers,
       );
       print('Motion SOS Response: ${response.body}');
-      return response.body;
+      return jsonDecode(response.body);
     } catch (e) {
       return {
         'success': false,
