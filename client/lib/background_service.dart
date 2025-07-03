@@ -22,6 +22,7 @@ Future<void> initializeService() async {
 
   // Initialize notifications BEFORE configuring the service
   await _initializeNotifications();
+  await _createNotificationChannels();
 
   await service.configure(
     androidConfiguration: AndroidConfiguration(
@@ -71,6 +72,43 @@ Future<void> _initializeNotifications() async {
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }
 
+Future<void> _createNotificationChannels() async {
+  // Create the main safety monitor channel
+  const AndroidNotificationChannel safetyChannel = AndroidNotificationChannel(
+    'raksha_safety_monitor',
+    'Safety Monitor',
+    description: 'Background safety monitoring service',
+    importance: Importance.low,
+    enableVibration: false,
+    playSound: false,
+    showBadge: false,
+  );
+
+  // Create the emergency alerts channel
+  const AndroidNotificationChannel emergencyChannel =
+      AndroidNotificationChannel(
+        'emergency_alerts',
+        'Emergency Alerts',
+        description: 'Critical emergency notifications',
+        importance: Importance.max,
+        enableVibration: true,
+        playSound: true,
+        showBadge: true,
+      );
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(safetyChannel);
+
+  await flutterLocalNotificationsPlugin
+      .resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin
+      >()
+      ?.createNotificationChannel(emergencyChannel);
+}
+
 @pragma('vm:entry-point')
 void onStart(ServiceInstance service) {
   WidgetsFlutterBinding.ensureInitialized();
@@ -88,6 +126,7 @@ void onStart(ServiceInstance service) {
 void _initializeServiceAsync(ServiceInstance service) async {
   try {
     await _initializeNotifications();
+    await _createNotificationChannels();
   } catch (e) {
     print("Error initializing notifications: $e");
   }
@@ -231,6 +270,7 @@ Future<void> _showEmergencyNotification(String reason) async {
           playSound: true,
           autoCancel: false,
           ongoing: true,
+          icon: '@mipmap/ic_launcher',
         );
 
     const DarwinNotificationDetails iOSPlatformChannelSpecifics =
