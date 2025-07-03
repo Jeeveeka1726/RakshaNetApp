@@ -21,7 +21,7 @@ const authToken = process.env.TWILIO_AUTH_TOKEN;
 const twilioNumber = process.env.TWILIO_PHONE_NUMBER;
 const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
 const fast2smsApiKey = process.env.FAST2SMS_API_KEY;
-const fast2smsRecipients = process.env.FAST2SMS_RECIPIENTS; // comma-separated mobile numbers
+const fast2smsRecipients = process.env.FAST2SMS_RECIPIENTS; // comma-separated numbers
 
 const client = twilio(accountSid, authToken);
 
@@ -37,29 +37,34 @@ app.use("/api/contacts", contactRoutes);
 app.use("/api/sos", authMiddleware, require("./routes/sos"));
 
 /**
- * 🔹 Route to send SMS via Fast2SMS (protected)
- * Requires:
- * - FAST2SMS_API_KEY in .env
- * - FAST2SMS_RECIPIENTS in .env
+ * 🔹 Route to send SMS via Fast2SMS (POST)
  */
 app.post("/send-sms", authMiddleware, async (req, res) => {
   const { message } = req.body;
 
   if (!message) {
-    return res.status(400).json({ success: false, error: 'Missing "message" in request body.' });
+    return res.status(400).json({
+      success: false,
+      error: 'Missing "message" in request body.',
+    });
   }
 
   const FAST2SMS_URL = "https://www.fast2sms.com/dev/bulkV2";
-  const params = {
-    authorization: fast2smsApiKey,
+
+  const payload = {
     message: message,
     language: "english",
-    route: "q", // Quick SMS route
+    route: "q",
     numbers: fast2smsRecipients,
   };
 
+  const headers = {
+    Authorization: fast2smsApiKey,
+    "Content-Type": "application/json",
+  };
+
   try {
-    const response = await axios.get(FAST2SMS_URL, { params });
+    const response = await axios.post(FAST2SMS_URL, payload, { headers });
 
     if (response.data.return) {
       res.status(200).json({
@@ -76,11 +81,17 @@ app.post("/send-sms", authMiddleware, async (req, res) => {
     }
   } catch (error) {
     console.error("Fast2SMS Error:", error.response?.data || error.message);
-    res.status(500).json({ success: false, error: "Error while sending SMS" });
+    res.status(500).json({
+      success: false,
+      error: "Error while sending SMS",
+      details: error.response?.data || error.message,
+    });
   }
 });
 
-// 🔹 Route to make a call (protected)
+/**
+ * 🔹 Route to make a call using Twilio (POST)
+ */
 app.post("/make-call", authMiddleware, async (req, res) => {
   const { to, message } = req.body;
 
@@ -92,7 +103,7 @@ app.post("/make-call", authMiddleware, async (req, res) => {
   }
 
   try {
-    // Extract coordinates from Google Maps URL
+    // If the message contains a map URL, extract the coordinates
     const coordMatch = message.match(/https:\/\/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/);
     let finalMessage = message;
 
@@ -142,6 +153,7 @@ app.post("/make-call", authMiddleware, async (req, res) => {
   }
 });
 
+// 🔥 Start server
 app.listen(port, () => {
   console.log(`🚀 Server running on http://localhost:${port}`);
 });
