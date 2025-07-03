@@ -9,29 +9,21 @@ const FAST2SMS_API_KEY =
   "iDJxaW8B6ze0pn2lO5NhgFufKH3TXMdytUQrsLqSmYAcCjZv1PA2fhW67eCH3y8pYZ4NIuvEsmjGQbUM";
 const FAST2SMS_API_URL = "https://www.fast2sms.com/dev/bulkV2";
 
-// ✅ Updated: Shared function to send SMS using GET
-async function sendFast2SMS(phones, message) {
-  try {
-    for (const phone of phones) {
-      await axios.get(FAST2SMS_API_URL, {
-        params: {
-          authorization: FAST2SMS_API_KEY,
-          message,
-          language: "english",
-          route: "q",
-          numbers: phone,
-        },
-      });
-    }
-    return {
-      success: true,
-      message: "OTP sent to all numbers",
-      data: response.data,
-    };
-  } catch (err) {
-    console.error("❌ Fast2SMS Error:", err.response?.data || err.message);
-    throw new Error("Failed to send SMS");
-  }
+// ✅ Updated: Shared function to send SMS using POST
+async function sendFast2SMS(phoneNumbers, message) {
+  const data = new URLSearchParams({
+    message,
+    language: "english",
+    route: "q",
+    numbers: phoneNumbers.join(","),
+  });
+
+  await axios.post(FAST2SMS_API_URL, data, {
+    headers: {
+      authorization: FAST2SMS_API_KEY,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+  });
 }
 
 // ✅ Voice SOS route

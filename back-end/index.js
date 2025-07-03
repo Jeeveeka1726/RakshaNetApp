@@ -5,7 +5,7 @@ const cors = require("cors");
 const twilio = require("twilio");
 const fetch = require("node-fetch");
 const axios = require("axios");
-const { syncDatabase } = require("./models");
+const { syncDatabase, Contact } = require("./models");
 
 // Import routes
 const authRoutes = require("./routes/auth");
@@ -41,6 +41,19 @@ app.use("/api/sos", authMiddleware, require("./routes/sos"));
  */
 app.post("/send-sms", authMiddleware, async (req, res) => {
   const { message } = req.body;
+  const { userId } = req.user;
+
+  const contacts = await Contact.findAll({
+    where: { userId },
+  });
+
+  if (!contacts.length) {
+    return res.status(404).json({
+      success: false,
+      message: "No verified emergency contacts found",
+    });
+  }
+  const phoneNumbers = contacts.map((contact) => contact.phone);
 
   if (!message) {
     return res.status(400).json({
@@ -48,28 +61,28 @@ app.post("/send-sms", authMiddleware, async (req, res) => {
       error: 'Missing "message" in request body.',
     });
   }
-
   const FAST2SMS_URL = "https://www.fast2sms.com/dev/bulkV2";
 
-  const payload = {
-    message: message,
+  // Prepare payload as URL-encoded string
+  const params = new URLSearchParams({
+    message,
     language: "english",
     route: "q",
-    numbers: fast2smsRecipients,
-  };
+    numbers: phoneNumbers.join(","),
+  });
 
   const headers = {
     Authorization: fast2smsApiKey,
-    "Content-Type": "application/json",
+    "Content-Type": "application/x-www-form-urlencoded",
   };
 
   try {
-    const response = await axios.post(FAST2SMS_URL, payload, { headers });
+    const response = await axios.post(FAST2SMS_URL, params, { headers });
 
     if (response.data.return) {
       res.status(200).json({
         success: true,
-        message: `SMS sent successfully to ${fast2smsRecipients}`,
+        message: `SMS sent successfully to ${phoneNumbers.join(", ")}`,
         response: response.data,
       });
     } else {
@@ -104,7 +117,9 @@ app.post("/make-call", authMiddleware, async (req, res) => {
 
   try {
     // If the message contains a map URL, extract the coordinates
-    const coordMatch = message.match(/https:\/\/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/);
+    const coordMatch = message.match(
+      /https:\/\/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/
+    );
     let finalMessage = message;
 
     if (coordMatch) {
@@ -114,8 +129,13 @@ app.post("/make-call", authMiddleware, async (req, res) => {
       );
       const geoData = await geoResponse.json();
 
-      const address = geoData.results[0]?.formatted_address || `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
-      finalMessage = message.replace(/https:\/\/maps\.google\.com[^\s]+/, address);
+      const address =
+        geoData.results[0]?.formatted_address ||
+        `${Number(lat).toFixed(4)}, ${Number(lng).toFixed(4)}`;
+      finalMessage = message.replace(
+        /https:\/\/maps\.google\.com[^\s]+/,
+        address
+      );
     }
 
     const cleanMessage = finalMessage
