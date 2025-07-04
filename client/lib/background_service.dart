@@ -215,7 +215,20 @@ Future<void> _triggerVoiceSOS(String reason) async {
   print("🎤 VOICE SOS TRIGGERED: $reason");
 
   try {
-    await ApiService.triggerVoiceSos();
+    // Get current location for SOS
+    Position? position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (e) {
+      print("Could not get location for voice SOS: $e");
+    }
+
+    await ApiService.triggerVoiceSos(
+      latitude: position?.latitude,
+      longitude: position?.longitude,
+    );
     await _triggerEmergencyAlert(reason);
   } catch (e) {
     print("Error triggering voice SOS: $e");
@@ -227,7 +240,20 @@ Future<void> _triggerMotionSOS(String reason) async {
   print("📱 MOTION SOS TRIGGERED: $reason");
 
   try {
-    await ApiService.triggerMotionSos();
+    // Get current location for SOS
+    Position? position;
+    try {
+      position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+    } catch (e) {
+      print("Could not get location for motion SOS: $e");
+    }
+
+    await ApiService.triggerMotionSos(
+      latitude: position?.latitude,
+      longitude: position?.longitude,
+    );
     await _triggerEmergencyAlert(reason);
   } catch (e) {
     print("Error triggering motion SOS: $e");
