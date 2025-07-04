@@ -262,12 +262,21 @@ class ApiService {
   }
 
   // Trigger Voice SOS
-  static Future<Map<String, dynamic>> triggerVoiceSos() async {
+  static Future<Map<String, dynamic>> triggerVoiceSos({double? latitude, double? longitude}) async {
     try {
       final headers = await getHeaders();
+      final body = <String, dynamic>{};
+
+      // Include location if provided
+      if (latitude != null && longitude != null) {
+        body['latitude'] = latitude;
+        body['longitude'] = longitude;
+      }
+
       final response = await http.post(
         Uri.parse('$baseUrl/sos/voice'),
         headers: headers,
+        body: body.isNotEmpty ? jsonEncode(body) : null,
       );
       print('Voice SOS response: ${response.body}');
       return jsonDecode(response.body);
@@ -280,12 +289,21 @@ class ApiService {
   }
 
   // Trigger Motion SOS
-  static Future<Map<String, dynamic>> triggerMotionSos() async {
+  static Future<Map<String, dynamic>> triggerMotionSos({double? latitude, double? longitude}) async {
     try {
       final headers = await getHeaders();
+      final body = <String, dynamic>{};
+
+      // Include location if provided
+      if (latitude != null && longitude != null) {
+        body['latitude'] = latitude;
+        body['longitude'] = longitude;
+      }
+
       final response = await http.post(
         Uri.parse('$baseUrl/sos/motion'),
         headers: headers,
+        body: body.isNotEmpty ? jsonEncode(body) : null,
       );
       print('Motion SOS Response: ${response.body}');
       return jsonDecode(response.body);

@@ -118,7 +118,7 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
   }
 
   Future<void> _sendSMS() async {
-    if (locationLink == null) {
+    if (currentPosition == null) {
       _showAlert('Error', 'Location not available. Please try again.');
       return;
     }
@@ -126,20 +126,16 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
     setState(() => loading = true);
 
     try {
-      final message =
-          '🚨 EMERGENCY SOS ALERT! 🚨\n\n'
-          'I need immediate help!\n\n'
-          '📍 My current location:\n$locationLink\n\n'
-          'This is an automated emergency message from RakshaNet.';
+      // Pass location coordinates to the API
+      final result = await ApiService.triggerVoiceSos(
+        latitude: currentPosition!.latitude,
+        longitude: currentPosition!.longitude,
+      );
 
-
-      final result = await ApiService.triggerVoiceSos();
-
-
-      if (result['response'] != null && result['response']['return'] == true) {
+      if (result['success'] == true) {
         _showAlert(
           'SOS Sent!',
-          'Emergency SMS has been sent to all your emergency contacts.',
+          'Emergency SMS with your location has been sent to all your emergency contacts.',
         );
       } else {
         _showAlert('Error', result['error'] ?? 'Failed to send SOS SMS');

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:geolocator/geolocator.dart';
 import 'background_service.dart';
 import 'nearby_stations_page.dart';
 import 'enhanced_sos_page.dart';
@@ -112,7 +113,20 @@ class _DashboardPageState extends State<DashboardPage>
 
   void _testVoiceDetection() async {
     try {
-      final result = await ApiService.triggerVoiceSos();
+      // Get current location for testing
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+      } catch (e) {
+        print('Could not get location for test: $e');
+      }
+
+      final result = await ApiService.triggerVoiceSos(
+        latitude: position?.latitude,
+        longitude: position?.longitude,
+      );
       if (result['success']) {
         _showSnackBar('Voice SOS triggered successfully!', Colors.green);
       } else {
@@ -128,7 +142,20 @@ class _DashboardPageState extends State<DashboardPage>
 
   void _testMotionDetection() async {
     try {
-      final result = await ApiService.triggerMotionSos();
+      // Get current location for testing
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy: LocationAccuracy.high,
+        );
+      } catch (e) {
+        print('Could not get location for test: $e');
+      }
+
+      final result = await ApiService.triggerMotionSos(
+        latitude: position?.latitude,
+        longitude: position?.longitude,
+      );
       if (result['success']) {
         _showSnackBar('Motion SOS triggered successfully!', Colors.green);
       } else {
