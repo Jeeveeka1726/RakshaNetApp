@@ -5,7 +5,7 @@ const axios = require("axios");
 const router = express.Router();
 
 // Google Maps API Key (will be loaded from environment)
-const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY;
+const GOOGLE_MAPS_API_KEY = "AIzaSyAeN6n8eMSKveBnlZT_oQQcgsFUfVjVfac";
 
 // ✅ Fast2SMS config
 const FAST2SMS_API_KEY =
