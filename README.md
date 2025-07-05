@@ -52,7 +52,4 @@ Raksha Net is a mobile-first safety application designed specifically for women,
 - 🚦 Offline alert via SMS gateway
 - 🌍 Crowd-rated public safety scores for locations
 
----
-
-## 📦 Project Structure
 
