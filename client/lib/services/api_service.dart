@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'firebase_service.dart';
 
 class ApiService {
   static const String baseUrl = 'https://rakshanetapp.onrender.com/api';
@@ -278,8 +279,32 @@ class ApiService {
         headers: headers,
         body: body.isNotEmpty ? jsonEncode(body) : null,
       );
+
+      final result = jsonDecode(response.body);
       print('Voice SOS response: ${response.body}');
-      return jsonDecode(response.body);
+
+      // If SOS was successful, also store in Firebase and start live tracking
+      if (result['success'] == true) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final userId = prefs.getString('userId') ?? '';
+          final userName = prefs.getString('userName') ?? 'Unknown User';
+
+          // Store SOS event in Firebase with live location tracking
+          await FirebaseService.storeSosEventWithLocation(
+            userId: userId,
+            userName: userName,
+            type: 'voice',
+            contactsData: [], // Will be populated from backend response if needed
+          );
+
+          print('✅ Voice SOS stored in Firebase and live tracking started');
+        } catch (e) {
+          print('⚠️ Failed to store SOS in Firebase: $e');
+        }
+      }
+
+      return result;
     } catch (e) {
       return {
         'success': false,
@@ -305,8 +330,32 @@ class ApiService {
         headers: headers,
         body: body.isNotEmpty ? jsonEncode(body) : null,
       );
+
+      final result = jsonDecode(response.body);
       print('Motion SOS Response: ${response.body}');
-      return jsonDecode(response.body);
+
+      // If SOS was successful, also store in Firebase and start live tracking
+      if (result['success'] == true) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final userId = prefs.getString('userId') ?? '';
+          final userName = prefs.getString('userName') ?? 'Unknown User';
+
+          // Store SOS event in Firebase with live location tracking
+          await FirebaseService.storeSosEventWithLocation(
+            userId: userId,
+            userName: userName,
+            type: 'motion',
+            contactsData: [], // Will be populated from backend response if needed
+          );
+
+          print('✅ Motion SOS stored in Firebase and live tracking started');
+        } catch (e) {
+          print('⚠️ Failed to store SOS in Firebase: $e');
+        }
+      }
+
+      return result;
     } catch (e) {
       return {
         'success': false,

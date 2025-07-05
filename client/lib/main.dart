@@ -9,9 +9,18 @@ import 'dashboard_page.dart';
 import 'theme.dart';
 import 'background_service.dart';
 import 'services/api_service.dart';
+import 'services/firebase_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
+  try {
+    await FirebaseService.initialize();
+    print('Firebase initialized successfully');
+  } catch (e) {
+    print('Failed to initialize Firebase: $e');
+  }
 
   // Request all permissions at app launch
   await _requestAllPermissions();

@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "910921426775",
+    "project_id": "rakshanet--live--location",
+    "storage_bucket": "rakshanet--live--location.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:910921426775:android:9a1777219def3794d08012",
+        "android_client_info": {
+          "package_name": "com.rakshanet.client"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "910921426775-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCdfdZrq2XI7OpoLvB0sTqKgY2ifHrgF8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "123456789-abcdefghijklmnopqrstuvwxyz.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

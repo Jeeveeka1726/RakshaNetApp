@@ -1,5 +1,5 @@
 const express = require("express");
-const { Contact } = require("../models");
+const { Contact, SOSEvent, User } = require("../models");
 const axios = require("axios");
 
 const router = express.Router();
@@ -72,10 +72,11 @@ router.post("/voice", async (req, res) => {
 
     // Build message with location if provided
     let message = `🚨 SOS ALERT! 🚨\n${name} triggered an alert via RakshaNet!`;
+    let address = null;
 
     if (latitude && longitude) {
       try {
-        const address = await getAddressFromCoordinates(latitude, longitude);
+        address = await getAddressFromCoordinates(latitude, longitude);
         const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
         message += `\n\nLocation: ${address}\nMap Link: ${googleMapsLink}`;
       } catch (error) {
@@ -83,8 +84,24 @@ router.post("/voice", async (req, res) => {
         // Include raw coordinates if geocoding fails
         const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
         message += `\n\nLocation: ${latitude}, ${longitude}\nMap Link: ${googleMapsLink}`;
+        address = `${latitude}, ${longitude}`;
       }
     }
+
+    // Log SOS event to database
+    const sosEvent = await SOSEvent.create({
+      userId,
+      type: 'voice',
+      latitude: latitude || null,
+      longitude: longitude || null,
+      address: address,
+      contactsNotified: phoneNumbers.length,
+      contactsData: contacts.map(contact => ({
+        name: contact.name,
+        phone: contact.phone,
+        relationship: contact.relationship
+      }))
+    });
 
     await sendFast2SMS(phoneNumbers, message);
 
@@ -93,6 +110,7 @@ router.post("/voice", async (req, res) => {
       message: `SOS alert sent to ${phoneNumbers.length} emergency contacts`,
       contactsNotified: phoneNumbers.length,
       locationIncluded: !!(latitude && longitude),
+      sosEventId: sosEvent.id,
     });
   } catch (err) {
     res.status(500).json({
@@ -123,10 +141,11 @@ router.post("/motion", async (req, res) => {
 
     // Build message with location if provided
     let message = `🚨 MOTION SOS ALERT! 🚨\n${name} triggered a motion alert via RakshaNet!`;
+    let address = null;
 
     if (latitude && longitude) {
       try {
-        const address = await getAddressFromCoordinates(latitude, longitude);
+        address = await getAddressFromCoordinates(latitude, longitude);
         const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
         message += `\n\nLocation: ${address}\nMap Link: ${googleMapsLink}`;
       } catch (error) {
@@ -134,8 +153,24 @@ router.post("/motion", async (req, res) => {
         // Include raw coordinates if geocoding fails
         const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
         message += `\n\nLocation: ${latitude}, ${longitude}\nMap Link: ${googleMapsLink}`;
+        address = `${latitude}, ${longitude}`;
       }
     }
+
+    // Log SOS event to database
+    const sosEvent = await SOSEvent.create({
+      userId,
+      type: 'motion',
+      latitude: latitude || null,
+      longitude: longitude || null,
+      address: address,
+      contactsNotified: phoneNumbers.length,
+      contactsData: contacts.map(contact => ({
+        name: contact.name,
+        phone: contact.phone,
+        relationship: contact.relationship
+      }))
+    });
 
     await sendFast2SMS(phoneNumbers, message);
 
@@ -144,6 +179,7 @@ router.post("/motion", async (req, res) => {
       message: `Motion SOS alert sent to ${phoneNumbers.length} emergency contacts`,
       contactsNotified: phoneNumbers.length,
       locationIncluded: !!(latitude && longitude),
+      sosEventId: sosEvent.id,
     });
   } catch (err) {
     res.status(500).json({

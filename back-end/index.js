@@ -35,6 +35,7 @@ syncDatabase();
 app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactRoutes);
 app.use("/api/sos", authMiddleware, require("./routes/sos"));
+app.use("/api/admin", require("./routes/admin"));
 
 /**
  * 🔹 Route to send SMS via Fast2SMS (POST)
