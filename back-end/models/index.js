@@ -18,10 +18,14 @@ const sequelize = new Sequelize(
 // Import models
 const User = require("./User")(sequelize)
 const Contact = require("./Contact")(sequelize)
+const SOSEvent = require("./SOSEvent")(sequelize)
 
 // Define associations
 User.hasMany(Contact, { foreignKey: "userId", as: "contacts" })
 Contact.belongsTo(User, { foreignKey: "userId", as: "user" })
+
+User.hasMany(SOSEvent, { foreignKey: "userId", as: "sosEvents" })
+SOSEvent.belongsTo(User, { foreignKey: "userId", as: "user" })
 
 // Sync database
 const syncDatabase = async () => {
@@ -40,5 +44,6 @@ module.exports = {
   sequelize,
   User,
   Contact,
+  SOSEvent,
   syncDatabase,
 }
