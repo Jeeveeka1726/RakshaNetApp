@@ -19,8 +19,8 @@ class FirebaseService {
           storageBucket: "rakshanet--live--location.firebasestorage.app",
           messagingSenderId: "910921426775",
           appId: "1:910921426775:web:9a1777219def3794d08012",
-          androidAppId: "1:910921426775:android:9a1777219def3794d08012",
-          iosAppId: "1:910921426775:ios:9a1777219def3794d08012",
+          // androidAppId: "1:910921426775:android:9a1777219def3794d08012",
+          // iosAppId: "1:910921426775:ios:9a1777219def3794d08012",
         ),
       );
       _firestore = FirebaseFirestore.instance;

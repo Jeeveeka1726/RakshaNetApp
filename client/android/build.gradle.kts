@@ -1,4 +1,9 @@
 buildscript {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
     dependencies {
         classpath("com.google.gms:google-services:4.3.15")
     }
@@ -8,6 +13,9 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        gradlePluginPortal()
+        // Add Flutter's repository
+        maven { url = uri("https://storage.googleapis.com/download.flutter.io") }
     }
 }
 

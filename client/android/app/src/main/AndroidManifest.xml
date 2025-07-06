@@ -1,5 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.example.client"
     xmlns:tools="http://schemas.android.com/tools">
 
     <!-- 🔐 Permissions -->
@@ -62,7 +61,7 @@
 
         <!-- 🔁 Boot Completed Receiver (Optional: implement if needed) -->
         <receiver
-            android:name="com.example.client.MyBootReceiver"
+            android:name="com.rakshanet.client.MyBootReceiver"
             android:enabled="true"
             android:exported="true">
             <intent-filter>

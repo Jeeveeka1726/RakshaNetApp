@@ -147,36 +147,6 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
     }
   }
 
-  Future<void> _makeCall() async {
-    if (locationLink == null) {
-      _showAlert('Error', 'Location not available. Please try again.');
-      return;
-    }
-
-    setState(() => loading = true);
-
-    try {
-      final message =
-          'Emergency SOS Alert! I need immediate help. '
-          'My location: $locationLink';
-
-      final result = await ApiService.makeSosCall('+1234567890', message);
-
-      if (result['success']) {
-        _showAlert(
-          'SOS Call Initiated!',
-          'Emergency call has been placed to your primary contact.',
-        );
-      } else {
-        _showAlert('Error', result['error'] ?? 'Failed to make SOS call');
-      }
-    } catch (e) {
-      _showAlert('Error', 'Failed to make SOS call: ${e.toString()}');
-    } finally {
-      setState(() => loading = false);
-    }
-  }
-
   void _showAlert(String title, String content) {
     showDialog(
       context: context,
@@ -450,64 +420,37 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Text(
-                                  'Choose Alert Method',
+                                  'Emergency SMS Alert',
                                   style: Theme.of(context).textTheme.titleLarge,
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'Sending alert in $countdown seconds',
+                                  'Sending SMS alert in $countdown seconds',
                                   style: const TextStyle(
                                     color: Color(0xFFEF4444),
                                     fontWeight: FontWeight.w600,
                                   ),
                                 ),
                                 const SizedBox(height: 24),
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFF3B82F6,
-                                          ),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 16,
-                                          ),
-                                        ),
-                                        icon: const Icon(Icons.sms_outlined),
-                                        label: const Text('Send SMS'),
-                                        onPressed: () {
-                                          timer?.cancel();
-                                          _pulseController.stop();
-                                          setState(() => modalVisible = false);
-                                          _triggerAction('SMS');
-                                        },
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF3B82F6),
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
                                       ),
                                     ),
-                                    const SizedBox(width: 16),
-                                    Expanded(
-                                      child: ElevatedButton.icon(
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: const Color(
-                                            0xFF10B981,
-                                          ),
-                                          foregroundColor: Colors.white,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 16,
-                                          ),
-                                        ),
-                                        icon: const Icon(Icons.call_outlined),
-                                        label: const Text('Make Call'),
-                                        onPressed: () {
-                                          timer?.cancel();
-                                          _pulseController.stop();
-                                          setState(() => modalVisible = false);
-                                          _triggerAction('Call');
-                                        },
-                                      ),
-                                    ),
-                                  ],
+                                    icon: const Icon(Icons.sms_outlined),
+                                    label: const Text('Send SMS Alert'),
+                                    onPressed: () {
+                                      timer?.cancel();
+                                      _pulseController.stop();
+                                      setState(() => modalVisible = false);
+                                      _triggerAction('SMS');
+                                    },
+                                  ),
                                 ),
                                 const SizedBox(height: 16),
                                 TextButton(
