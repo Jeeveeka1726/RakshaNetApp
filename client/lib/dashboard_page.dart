@@ -665,28 +665,28 @@ class _DashboardPageState extends State<DashboardPage>
                       );
                     },
                   ),
-                  _buildModernActionCard(
-                    icon: Icons.local_hospital_rounded,
-                    title: 'Medical\nInfo',
-                    color: const Color(0xFFEF4444),
-                    onTap: () {
-                      _showSnackBar(
-                        'Medical info feature coming soon!',
-                        const Color(0xFF3B82F6),
-                      );
-                    },
-                  ),
-                  _buildModernActionCard(
-                    icon: Icons.history_rounded,
-                    title: 'Alert\nHistory',
-                    color: const Color(0xFF8B5CF6),
-                    onTap: () {
-                      _showSnackBar(
-                        'Alert history feature coming soon!',
-                        const Color(0xFF3B82F6),
-                      );
-                    },
-                  ),
+                  // _buildModernActionCard(
+                  //   icon: Icons.local_hospital_rounded,
+                  //   title: 'Medical\nInfo',
+                  //   color: const Color(0xFFEF4444),
+                  //   onTap: () {
+                  //     _showSnackBar(
+                  //       'Medical info feature coming soon!',
+                  //       const Color(0xFF3B82F6),
+                  //     );
+                  //   },
+                  // ),
+                  // _buildModernActionCard(
+                  //   icon: Icons.history_rounded,
+                  //   title: 'Alert\nHistory',
+                  //   color: const Color(0xFF8B5CF6),
+                  //   onTap: () {
+                  //     _showSnackBar(
+                  //       'Alert history feature coming soon!',
+                  //       const Color(0xFF3B82F6),
+                  //     );
+                  //   },
+                  // ),
                 ],
               ),
             ],
