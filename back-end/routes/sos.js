@@ -9,24 +9,29 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyAeN6n8eMSKveBnlZT_oQQcgsFUfVjVfac";
 
 // ✅ Fast2SMS config
 const FAST2SMS_API_KEY =
-  "zTXenxgJhCwoaPjcxdO4GGfExiX3JKQpBWmQA2xepZ8qyQpph69IvhWT50y5";
+  "Ccbe3nBcS0zTyLqSzEi9OLphVkGt7ParfauGQb8SF7GAYp2XebKqgWxGTmXQ";
 const FAST2SMS_API_URL = "https://www.fast2sms.com/dev/bulkV2";
 
 // ✅ Updated: Shared function to send SMS using POST
 async function sendFast2SMS(phoneNumbers, message) {
-  const data = new URLSearchParams({
-    message,
-    language: "english",
-    route: "q",
-    numbers: phoneNumbers.join(","),
-  });
+  try {
+    const data = new URLSearchParams({
+      message,
+      language: "english",
+      route: "q",
+      numbers: phoneNumbers.join(","),
+    });
 
-  await axios.post(FAST2SMS_API_URL, data, {
-    headers: {
-      authorization: FAST2SMS_API_KEY,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-  });
+    await axios.post(FAST2SMS_API_URL, data, {
+      headers: {
+        authorization: FAST2SMS_API_KEY,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+    });
+  } catch (error) {
+    console.error("Error sending SMS via Fast2SMS:", error.response ? error.response.data : error.message);
+    throw new Error("Failed to send SMS via Fast2SMS");
+  }
 }
 
 // ✅ Helper function to get address from coordinates using Google Geocoding API
@@ -54,13 +59,14 @@ async function getAddressFromCoordinates(latitude, longitude) {
 // ✅ Voice SOS route with location support
 router.post("/voice", async (req, res) => {
   try {
+    console.log("Received SOS request:", req.body);
     const { userId, name } = req.user;
     const { latitude, longitude } = req.body;
 
     const contacts = await Contact.findAll({
       where: { userId, isVerified: true },
     });
-
+    console.log("Verified contacts found:", contacts.length);
     if (!contacts.length) {
       return res.status(404).json({
         success: false,
@@ -79,6 +85,8 @@ router.post("/voice", async (req, res) => {
         address = await getAddressFromCoordinates(latitude, longitude);
         const googleMapsLink = `https://www.google.com/maps?q=${latitude},${longitude}`;
         message += `\n\nLocation: ${address}\nMap Link: ${googleMapsLink}`;
+        console.log("Location processed:", address);
+        console.log("Google Maps link:", googleMapsLink);
       } catch (error) {
         console.error('Error processing location:', error);
         // Include raw coordinates if geocoding fails
@@ -87,9 +95,9 @@ router.post("/voice", async (req, res) => {
         address = `${latitude}, ${longitude}`;
       }
     }
-    
+    console.log("Final message to send:", message);
     await sendFast2SMS(phoneNumbers, message);
-
+    console.log("SMS sent to contacts:", phoneNumbers.join(", "));
     // Log SOS event to database
     const sosEvent = await SOSEvent.create({
       userId,
@@ -104,7 +112,7 @@ router.post("/voice", async (req, res) => {
         relationship: contact.relationship
       }))
     });
-
+    console.log("SOS event logged:", sosEvent.id);
     res.json({
       success: true,
       message: `SOS alert sent to ${phoneNumbers.length} emergency contacts`,
