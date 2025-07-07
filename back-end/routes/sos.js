@@ -9,7 +9,7 @@ const GOOGLE_MAPS_API_KEY = "AIzaSyAeN6n8eMSKveBnlZT_oQQcgsFUfVjVfac";
 
 // ✅ Fast2SMS config
 const FAST2SMS_API_KEY =
-  "Ccbe3nBcS0zTyLqSzEi9OLphVkGt7ParfauGQb8SF7GAYp2XebKqgWxGTmXQ";
+  "444tfVM3yX6xtznmLiAKsf5gzlAjN6O80rrmcFqH3vy7nocOYNFaThDwQ6jZ";
 const FAST2SMS_API_URL = "https://www.fast2sms.com/dev/bulkV2";
 
 // ✅ Updated: Shared function to send SMS using POST
