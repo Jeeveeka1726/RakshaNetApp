@@ -30,7 +30,7 @@ async function sendFast2SMS(phoneNumbers, message) {
     });
   } catch (error) {
     console.error("Error sending SMS via Fast2SMS:", error.response ? error.response.data : error.message);
-    throw new Error("Failed to send SMS via Fast2SMS");
+    throw new Error("Balance is too low to send SMS");
   }
 }
 
