@@ -87,6 +87,8 @@ router.post("/voice", async (req, res) => {
         address = `${latitude}, ${longitude}`;
       }
     }
+    
+    await sendFast2SMS(phoneNumbers, message);
 
     // Log SOS event to database
     const sosEvent = await SOSEvent.create({
@@ -102,8 +104,6 @@ router.post("/voice", async (req, res) => {
         relationship: contact.relationship
       }))
     });
-
-    await sendFast2SMS(phoneNumbers, message);
 
     res.json({
       success: true,
