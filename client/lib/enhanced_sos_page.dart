@@ -139,6 +139,7 @@ class _EnhancedSOSPageState extends State<EnhancedSOSPage>
         );
       } else {
         _showAlert('Error', result['error'] ?? 'Failed to send SOS SMS');
+        print(result['error']);
       }
     } catch (e) {
       _showAlert('Error', 'Failed to send SOS: ${e.toString()}');
